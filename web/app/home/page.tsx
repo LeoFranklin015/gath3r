@@ -25,7 +25,7 @@ export default function HomePage() {
     <div className="flex h-dvh flex-col bg-zinc-950">
       {/* Header */}
       <header className="flex items-center justify-between border-b border-zinc-800/60 px-4 py-3">
-        <span className="text-lg font-bold text-white">Gather</span>
+        <span className="text-lg font-bold text-white">Gath3r</span>
         <UserButton />
       </header>
 

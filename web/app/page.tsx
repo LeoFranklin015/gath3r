@@ -11,7 +11,7 @@ export default function SplashPage() {
 
   useEffect(() => {
     if (!ready || !authenticated || !user) return;
-    const hasOnboarded = localStorage.getItem(`gather:onboarded:${user.id}`);
+    const hasOnboarded = localStorage.getItem(`gath3r:onboarded:${user.id}`);
     router.replace(hasOnboarded ? "/home" : "/onboarding");
   }, [ready, authenticated, user, router]);
 

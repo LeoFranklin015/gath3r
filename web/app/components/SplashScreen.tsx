@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import Image from "next/image";
 
-const APP_NAME = "gather";
+const APP_NAME = "gath3r";
 const LETTER_DELAY_MS = 110;
 const LOGO_APPEAR_MS = 250;
 const TYPEWRITER_START_MS = 700;
@@ -49,13 +50,19 @@ export function SplashScreen() {
 
         {/* Logo: fades in + scales up */}
         <div
-          className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-foreground shadow-lg"
           style={{
             opacity: 0,
             animation: `fade-scale-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) ${LOGO_APPEAR_MS}ms forwards`,
           }}
         >
-          <span className="text-3xl font-black text-background">G</span>
+          <Image
+            src="/location-pin.gif"
+            alt="Gath3r"
+            width={100}
+            height={100}
+            priority
+            unoptimized
+          />
         </div>
 
         {/* App name: types in letter by letter */}

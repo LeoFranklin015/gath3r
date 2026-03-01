@@ -1,7 +1,7 @@
-# Gather — Claude Rules
+# Gath3r — Claude Rules
 
 ## Project Overview
-Gather is a **production-ready** web3 application built on the Kaolin testnet (Arkiv Network).
+Gath3r is a **production-ready** web3 application built on the Kaolin testnet (Arkiv Network).
 
 ## Code Quality Standards
 

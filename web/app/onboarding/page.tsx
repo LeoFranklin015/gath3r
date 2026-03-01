@@ -21,7 +21,7 @@ export default function OnboardingPage() {
   // Guard: already onboarded → home
   useEffect(() => {
     if (!ready || !authenticated || !user) return;
-    if (localStorage.getItem(`gather:onboarded:${user.id}`)) {
+    if (localStorage.getItem(`gath3r:onboarded:${user.id}`)) {
       router.replace("/home");
     }
   }, [ready, authenticated, user, router]);
@@ -30,8 +30,8 @@ export default function OnboardingPage() {
     if (!name.trim() || !user) return;
     setLoading(true);
     // TODO: persist profile to Arkiv chain
-    localStorage.setItem(`gather:onboarded:${user.id}`, "true");
-    localStorage.setItem(`gather:name:${user.id}`, name.trim());
+    localStorage.setItem(`gath3r:onboarded:${user.id}`, "true");
+    localStorage.setItem(`gath3r:name:${user.id}`, name.trim());
     router.replace("/home");
   };
 
