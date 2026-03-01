@@ -1,7 +1,7 @@
-# Duma — Claude Rules
+# Gather — Claude Rules
 
 ## Project Overview
-Duma is a **production-ready** web3 application built on the Kaolin testnet (Arkiv Network).
+Gather is a **production-ready** web3 application built on the Kaolin testnet (Arkiv Network).
 
 ## Code Quality Standards
 
