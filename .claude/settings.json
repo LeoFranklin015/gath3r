@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install @privy-io/react-auth viem)"
+    ]
+  }
+}
