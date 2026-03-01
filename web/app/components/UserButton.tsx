@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { Check, Copy, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export function UserButton() {
   const { logout, user } = usePrivy();
@@ -34,71 +36,59 @@ export function UserButton() {
   return (
     <div className="relative" ref={ref}>
       {/* Avatar trigger */}
-      <button
+      <Button
+        variant="default"
+        size="icon"
         onClick={() => setOpen((o) => !o)}
-        className="flex h-10 w-10 items-center justify-center rounded-full bg-zinc-900 text-sm font-semibold text-white shadow-sm transition-opacity hover:opacity-80 dark:bg-zinc-50 dark:text-zinc-900"
+        className="h-10 w-10 rounded-full text-sm font-semibold"
         aria-label="Open user menu"
         aria-expanded={open}
       >
         {initial}
-      </button>
+      </Button>
 
       {/* Dropdown */}
       {open && (
         <div
           role="menu"
-          className="absolute left-1/2 top-12 z-10 w-64 -translate-x-1/2 rounded-2xl border border-zinc-200 bg-white p-4 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          className="absolute left-1/2 top-12 z-10 w-64 -translate-x-1/2 rounded-2xl border bg-popover p-4 shadow-lg"
         >
           {/* Email */}
-          <p className="mb-3 truncate text-xs font-medium text-zinc-500 dark:text-zinc-400">
+          <p className="mb-3 truncate text-xs font-medium text-muted-foreground">
             {email}
           </p>
 
           {/* Address row */}
           {embeddedWallet && (
-            <button
+            <Button
+              variant="secondary"
               onClick={copyAddress}
               role="menuitem"
-              className="flex w-full items-center justify-between rounded-xl bg-zinc-100 px-3 py-2 transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700"
+              className="w-full justify-between rounded-xl font-mono text-xs"
             >
-              <span className="font-mono text-xs text-zinc-700 dark:text-zinc-300">
+              <span>
                 {embeddedWallet.address.slice(0, 6)}...{embeddedWallet.address.slice(-4)}
               </span>
-              {copied ? (
-                <CheckIcon className="h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <CopyIcon className="h-3.5 w-3.5 text-zinc-400" />
-              )}
-            </button>
+              {copied
+                ? <Check className="h-3.5 w-3.5 text-green-500" />
+                : <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+              }
+            </Button>
           )}
 
-          <div className="mt-3 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-            <button
+          <div className="mt-3 border-t pt-3">
+            <Button
+              variant="ghost"
               role="menuitem"
               onClick={() => { logout(); setOpen(false); }}
-              className="w-full rounded-xl px-3 py-2 text-left text-xs font-medium text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-950"
+              className="w-full justify-start text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
+              <LogOut className="mr-2 h-3.5 w-3.5" />
               Sign out
-            </button>
+            </Button>
           </div>
         </div>
       )}
     </div>
-  );
-}
-
-function CopyIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-    </svg>
-  );
-}
-
-function CheckIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
   );
 }
