@@ -2,8 +2,7 @@
 export const EXPIRES_IN = {
   PROFILE: 31_536_000,         // 365 days — renews on action
   EVENT_RECORD: 31_536_000,    // 365 days flat — historical tombstone
-  CHECKIN: 604_800,            // 7 days — POAP minting window
-  // EVENT, RSVP, APPROVAL: calculated dynamically from eventEndTime
+  // EVENT, RSVP, APPROVAL, CHECKIN: all derived from eventEndTime via EXPIRY_BUFFER_SECS
 } as const
 
 // Entity type discriminants — used as queryable attributes
@@ -23,7 +22,12 @@ export const EXPIRY_BUFFER_SECS = {
   APPROVAL: 14 * 24 * 60 * 60, // 14 days after event end
 } as const
 
-// Seconds between now and a future unix timestamp (minimum 0)
+// Seconds between now and a future unix timestamp (minimum 0).
+// Result is always a non-negative EVEN integer because the Arkiv SDK divides
+// expiresIn by BLOCK_TIME (2 s) before passing to BigInt — any odd value
+// produces a .5 float and throws RangeError.
 export function secondsUntil(unixTimestamp: number): number {
-  return Math.max(0, unixTimestamp - Math.floor(Date.now() / 1000))
+  const secs = Math.max(0, Math.floor(unixTimestamp) - Math.floor(Date.now() / 1000))
+  // Round UP to the nearest even number so the entity expires at least as long as requested
+  return secs % 2 === 0 ? secs : secs + 1
 }

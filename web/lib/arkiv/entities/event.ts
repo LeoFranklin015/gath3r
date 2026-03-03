@@ -20,17 +20,24 @@ export async function createEvent(
   walletClient: WalletClient,
   input: CreateEventInput,
 ): Promise<WriteResult> {
-  const expiresIn = secondsUntil(input.data.endTime) + EXPIRY_BUFFER_SECS.EVENT
+  const expiresIn = Math.floor(secondsUntil(input.data.endTime) + EXPIRY_BUFFER_SECS.EVENT)
+  const startTime = Math.floor(input.startTime)
+
+  const safeData = {
+    ...input.data,
+    startTime: Math.floor(input.data.startTime),
+    endTime: Math.floor(input.data.endTime),
+  }
 
   const { entityKey, txHash } = await walletClient.createEntity({
-    payload: jsonToPayload(input.data),
+    payload: jsonToPayload(safeData),
     contentType: 'application/json',
     attributes: [
       { key: 'type', value: ENTITY_TYPE.EVENT },
       { key: 'hostWallet', value: input.hostWallet },
       { key: 'status', value: 'draft' as EventStatus },
       { key: 'city', value: input.city },
-      { key: 'startTime', value: input.startTime.toString() },
+      { key: 'startTime', value: startTime.toString() },
     ],
     expiresIn,
   })
@@ -46,18 +53,25 @@ export async function publishEvent(
   startTime: number,
   hostWallet: `0x${string}`,
 ): Promise<WriteResult> {
-  const expiresIn = secondsUntil(data.endTime) + EXPIRY_BUFFER_SECS.EVENT
+  const expiresIn = Math.floor(secondsUntil(data.endTime) + EXPIRY_BUFFER_SECS.EVENT)
+  const startTimeSecs = Math.floor(startTime)
+
+  const safeData = {
+    ...data,
+    startTime: Math.floor(data.startTime),
+    endTime: Math.floor(data.endTime),
+  }
 
   const result = await walletClient.updateEntity({
     entityKey,
-    payload: jsonToPayload(data),
+    payload: jsonToPayload(safeData),
     contentType: 'application/json',
     attributes: [
       { key: 'type', value: ENTITY_TYPE.EVENT },
       { key: 'hostWallet', value: hostWallet },
       { key: 'status', value: 'published' as EventStatus },
       { key: 'city', value: city },
-      { key: 'startTime', value: startTime.toString() },
+      { key: 'startTime', value: startTimeSecs.toString() },
     ],
     expiresIn,
   })
@@ -77,6 +91,8 @@ export async function listPublishedEvents(options?: {
   const result = await publicClient
     .buildQuery()
     .where(predicates)
+    .withAttributes(true)
+    .withMetadata(true)
     .withPayload(true)
     .fetch()
 

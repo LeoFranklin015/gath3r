@@ -61,3 +61,14 @@ export type RsvpStatus = 'pending' | 'confirmed' | 'waitlisted' | 'cancelled'
 export type EventStatus = 'draft' | 'published' | 'cancelled'
 export type ApprovalDecision = 'approved' | 'rejected' | 'waitlisted'
 export type CheckinMethod = 'qr' | 'nfc' | 'manual'
+
+// Extended entity types with on-chain attributes extracted
+export interface RsvpEntity extends ArkivEntity<RsvpPayload> {
+  attendeeWallet: `0x${string}`
+  status: RsvpStatus
+}
+
+export interface ApprovalEntity extends ArkivEntity<ApprovalPayload> {
+  attendeeWallet: `0x${string}`
+  decision: ApprovalDecision
+}

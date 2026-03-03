@@ -1,8 +1,9 @@
 import { jsonToPayload } from '@arkiv-network/sdk'
 import { eq } from '@arkiv-network/sdk/query'
 import { publicClient } from '@/lib/arkiv/client'
-import { ENTITY_TYPE } from '@/lib/arkiv/constants'
-import type { RsvpPayload, ArkivEntity, WriteResult, RsvpStatus } from '@/lib/arkiv/types'
+import { ENTITY_TYPE, EXPIRY_BUFFER_SECS, secondsUntil } from '@/lib/arkiv/constants'
+import type { RsvpPayload, RsvpEntity, WriteResult, RsvpStatus } from '@/lib/arkiv/types'
+import { getEvent } from './event'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WalletClient = any
@@ -10,7 +11,6 @@ type WalletClient = any
 export interface CreateRsvpInput {
   eventEntityKey: string
   attendeeWallet: `0x${string}`
-  eventExpiresIn: number   // same expiry as parent event — no orphans
   message?: string
 }
 
@@ -19,6 +19,10 @@ export async function createRsvp(
   walletClient: WalletClient,
   input: CreateRsvpInput,
 ): Promise<WriteResult> {
+  const event = await getEvent(input.eventEntityKey)
+  if (!event) throw new Error('Event not found')
+  const expiresIn = Math.floor(secondsUntil(event.payload.endTime) + EXPIRY_BUFFER_SECS.EVENT)
+
   const payload: RsvpPayload = {
     message: input.message ?? '',
     createdAt: Math.floor(Date.now() / 1000),
@@ -33,7 +37,7 @@ export async function createRsvp(
       { key: 'attendeeWallet', value: input.attendeeWallet },
       { key: 'status', value: 'pending' as RsvpStatus },
     ],
-    expiresIn: input.eventExpiresIn,
+    expiresIn,
   })
 
   return { entityKey, txHash }
@@ -44,8 +48,11 @@ export async function cancelRsvp(
   entityKey: string,
   eventEntityKey: string,
   attendeeWallet: `0x${string}`,
-  eventExpiresIn: number,
 ): Promise<WriteResult> {
+  const event = await getEvent(eventEntityKey)
+  if (!event) throw new Error('Event not found')
+  const expiresIn = Math.floor(secondsUntil(event.payload.endTime) + EXPIRY_BUFFER_SECS.EVENT)
+
   const payload: RsvpPayload = {
     message: '',
     createdAt: Math.floor(Date.now() / 1000),
@@ -61,36 +68,43 @@ export async function cancelRsvp(
       { key: 'attendeeWallet', value: attendeeWallet },
       { key: 'status', value: 'cancelled' as RsvpStatus },
     ],
-    expiresIn: eventExpiresIn,
+    expiresIn,
   })
 
   return { entityKey: result.entityKey, txHash: result.txHash }
 }
 
-export async function listRsvpsForEvent(
-  eventEntityKey: string,
-): Promise<ArkivEntity<RsvpPayload>[]> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function entityToRsvp(e: any): RsvpEntity {
+  const attr = (key: string) => e.attributes?.find((a: any) => a.key === key)?.value ?? ''
+  return {
+    entityKey: e.key,
+    owner: (e.owner || attr('attendeeWallet')) as `0x${string}`,
+    attendeeWallet: (attr('attendeeWallet') || e.owner || '') as `0x${string}`,
+    status: (attr('status') || 'pending') as RsvpStatus,
+    payload: e.toJson() as RsvpPayload,
+  }
+}
+
+export async function listRsvpsForEvent(eventEntityKey: string): Promise<RsvpEntity[]> {
   const result = await publicClient
     .buildQuery()
     .where([
       eq('type', ENTITY_TYPE.RSVP),
       eq('eventId', eventEntityKey),
     ])
+    .withAttributes(true)
+    .withMetadata(true)
     .withPayload(true)
     .fetch()
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return result.entities.map((e: any) => ({
-    entityKey: e.key,
-    owner: (e.owner || e.attributes?.find((a: any) => a.key === 'attendeeWallet')?.value || '') as `0x${string}`,
-    payload: e.toJson() as RsvpPayload,
-  }))
+  return result.entities.map(entityToRsvp)
 }
 
 export async function getRsvpForAttendee(
   eventEntityKey: string,
   attendeeWallet: `0x${string}`,
-): Promise<ArkivEntity<RsvpPayload> | null> {
+): Promise<RsvpEntity | null> {
   const result = await publicClient
     .buildQuery()
     .where([
@@ -98,17 +112,12 @@ export async function getRsvpForAttendee(
       eq('eventId', eventEntityKey),
       eq('attendeeWallet', attendeeWallet),
     ])
+    .withAttributes(true)
+    .withMetadata(true)
     .withPayload(true)
     .fetch()
 
   const entity = result.entities[0]
   if (!entity) return null
-
-  return {
-    entityKey: entity.key,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    owner: (entity.owner || (entity as any).attributes?.find((a: any) => a.key === 'attendeeWallet')?.value || attendeeWallet) as `0x${string}`,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    payload: (entity as any).toJson() as RsvpPayload,
-  }
+  return entityToRsvp(entity)
 }

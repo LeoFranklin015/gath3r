@@ -1,8 +1,9 @@
 import { jsonToPayload } from '@arkiv-network/sdk'
 import { eq } from '@arkiv-network/sdk/query'
 import { publicClient } from '@/lib/arkiv/client'
-import { ENTITY_TYPE, EXPIRES_IN } from '@/lib/arkiv/constants'
+import { ENTITY_TYPE, EXPIRY_BUFFER_SECS, secondsUntil } from '@/lib/arkiv/constants'
 import type { CheckinPayload, ArkivEntity, WriteResult, CheckinMethod } from '@/lib/arkiv/types'
+import { getEvent } from './event'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type WalletClient = any
@@ -14,11 +15,14 @@ export interface CreateCheckinInput {
   proof: string     // QR hash or geo string
 }
 
-// 7-day expiry = POAP minting window. After it expires, the window is closed.
 export async function createCheckin(
   walletClient: WalletClient,
   input: CreateCheckinInput,
 ): Promise<WriteResult> {
+  const event = await getEvent(input.eventEntityKey)
+  if (!event) throw new Error('Event not found')
+  const expiresIn = Math.floor(secondsUntil(event.payload.endTime) + EXPIRY_BUFFER_SECS.EVENT)
+
   const payload: CheckinPayload = {
     checkedInAt: Math.floor(Date.now() / 1000),
     proof: input.proof,
@@ -33,7 +37,7 @@ export async function createCheckin(
       { key: 'attendeeWallet', value: input.attendeeWallet },
       { key: 'method', value: input.method },
     ],
-    expiresIn: EXPIRES_IN.CHECKIN,
+    expiresIn,
   })
 
   return { entityKey, txHash }
@@ -50,6 +54,8 @@ export async function getCheckin(
       eq('eventId', eventEntityKey),
       eq('attendeeWallet', attendeeWallet),
     ])
+    .withAttributes(true)
+    .withMetadata(true)
     .withPayload(true)
     .fetch()
 

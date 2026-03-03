@@ -38,6 +38,8 @@ export async function getProfileByWallet(
   const result = await publicClient
     .buildQuery()
     .where([eq('type', ENTITY_TYPE.PROFILE), eq('wallet', wallet)])
+    .withAttributes(true)
+    .withMetadata(true)
     .withPayload(true)
     .fetch()
 
