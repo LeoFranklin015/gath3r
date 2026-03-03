@@ -6,12 +6,15 @@ import { usePrivy } from "@privy-io/react-auth";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useArkivWallet } from "@/app/hooks/useArkivWallet";
+import { createProfile } from "@/lib/arkiv/entities/profile";
 
 export default function OnboardingPage() {
   const { ready, authenticated, user, logout } = usePrivy();
   const router = useRouter();
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  const { getClient, address } = useArkivWallet();
 
   // Guard: not logged in → splash
   useEffect(() => {
@@ -29,10 +32,25 @@ export default function OnboardingPage() {
   const handleContinue = async () => {
     if (!name.trim() || !user) return;
     setLoading(true);
-    // TODO: persist profile to Arkiv chain
-    localStorage.setItem(`gath3r:onboarded:${user.id}`, "true");
-    localStorage.setItem(`gath3r:name:${user.id}`, name.trim());
-    router.replace("/home");
+    try {
+      if (address) {
+        const client = await getClient();
+        await createProfile(client, address, {
+          displayName: name.trim(),
+          bio: "",
+          avatar: "",
+        });
+      }
+      localStorage.setItem(`gath3r:onboarded:${user.id}`, "true");
+      router.replace("/home");
+    } catch (e) {
+      console.error("Failed to create profile on Arkiv:", e);
+      // Still proceed — don't block onboarding if Arkiv write fails
+      localStorage.setItem(`gath3r:onboarded:${user.id}`, "true");
+      router.replace("/home");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!ready || !authenticated) {

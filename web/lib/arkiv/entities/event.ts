@@ -1,0 +1,105 @@
+import { jsonToPayload, NoEntityFoundError } from '@arkiv-network/sdk'
+import { eq } from '@arkiv-network/sdk/query'
+import { publicClient } from '@/lib/arkiv/client'
+import { ENTITY_TYPE, EXPIRY_BUFFER_SECS, secondsUntil } from '@/lib/arkiv/constants'
+import type { EventPayload, ArkivEntity, WriteResult, EventStatus } from '@/lib/arkiv/types'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type WalletClient = any
+
+
+
+export interface CreateEventInput {
+  hostWallet: `0x${string}`
+  city: string
+  startTime: number        // unix timestamp
+  data: EventPayload
+}
+
+export async function createEvent(
+  walletClient: WalletClient,
+  input: CreateEventInput,
+): Promise<WriteResult> {
+  const expiresIn = secondsUntil(input.data.endTime) + EXPIRY_BUFFER_SECS.EVENT
+
+  const { entityKey, txHash } = await walletClient.createEntity({
+    payload: jsonToPayload(input.data),
+    contentType: 'application/json',
+    attributes: [
+      { key: 'type', value: ENTITY_TYPE.EVENT },
+      { key: 'hostWallet', value: input.hostWallet },
+      { key: 'status', value: 'draft' as EventStatus },
+      { key: 'city', value: input.city },
+      { key: 'startTime', value: input.startTime.toString() },
+    ],
+    expiresIn,
+  })
+
+  return { entityKey, txHash }
+}
+
+export async function publishEvent(
+  walletClient: WalletClient,
+  entityKey: string,
+  data: EventPayload,
+  city: string,
+  startTime: number,
+  hostWallet: `0x${string}`,
+): Promise<WriteResult> {
+  const expiresIn = secondsUntil(data.endTime) + EXPIRY_BUFFER_SECS.EVENT
+
+  const result = await walletClient.updateEntity({
+    entityKey,
+    payload: jsonToPayload(data),
+    contentType: 'application/json',
+    attributes: [
+      { key: 'type', value: ENTITY_TYPE.EVENT },
+      { key: 'hostWallet', value: hostWallet },
+      { key: 'status', value: 'published' as EventStatus },
+      { key: 'city', value: city },
+      { key: 'startTime', value: startTime.toString() },
+    ],
+    expiresIn,
+  })
+
+  return { entityKey: result.entityKey, txHash: result.txHash }
+}
+
+export async function listPublishedEvents(options?: {
+  city?: string
+}): Promise<ArkivEntity<EventPayload>[]> {
+  const predicates = [
+    eq('type', ENTITY_TYPE.EVENT),
+    eq('status', 'published'),
+    ...(options?.city ? [eq('city', options.city)] : []),
+  ]
+
+  const result = await publicClient
+    .buildQuery()
+    .where(predicates)
+    .withPayload(true)
+    .fetch()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return result.entities.map((e: any) => ({
+    entityKey: e.key,
+    owner: (e.owner || e.attributes?.find((a: any) => a.key === 'hostWallet')?.value || '') as `0x${string}`,
+    payload: e.toJson() as EventPayload,
+  }))
+}
+
+export async function getEvent(
+  entityKey: string,
+): Promise<ArkivEntity<EventPayload> | null> {
+  try {
+    const entity = await publicClient.getEntity(entityKey as `0x${string}`)
+    return {
+      entityKey: entity.key,
+      owner: (entity.owner ?? '') as `0x${string}`,
+      payload: entity.toJson() as EventPayload,
+    }
+  } catch (e) {
+    if (e instanceof NoEntityFoundError) return null
+    throw e
+  }
+}
