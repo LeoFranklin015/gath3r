@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation"
 import { usePrivy } from "@privy-io/react-auth"
 import { ArrowLeft, Plus } from "lucide-react"
 import { EventCard } from "@/app/components/EventCard"
-import { useMyEvents } from "@/app/hooks/useMyEvents"
+import { useHostedEvents } from "@/app/hooks/useHostedEvents"
 
 export default function HostedEventsPage() {
   const { ready, authenticated } = usePrivy()
   const router = useRouter()
-  const { events, loading, error } = useMyEvents()
+  const { events, loading, error } = useHostedEvents()
 
   useEffect(() => {
     if (ready && !authenticated) router.replace("/")
@@ -75,7 +75,7 @@ export default function HostedEventsPage() {
               <EventCard
                 key={event.entityKey}
                 event={event}
-                onClick={() => router.push(`/events/${event.entityKey}`)}
+                onClick={() => router.push(`/events/hosted/${event.entityKey}`)}
               />
             ))}
           </div>
