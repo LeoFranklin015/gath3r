@@ -15,13 +15,16 @@ import {
   X,
   Clock,
   Ticket,
+  QrCode,
+  ScanLine,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEventDetail } from "@/app/hooks/useEventDetail"
 import { useRsvp } from "@/app/hooks/useRsvp"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createApproval } from "@/lib/arkiv/entities/approval"
-import { createCheckin } from "@/lib/arkiv/entities/checkin"
+import { CheckinQRCode } from "@/app/components/event-detail/CheckinQRCode"
+import { QRScanner } from "@/app/components/event-detail/QRScanner"
 import type { RsvpEntity } from "@/lib/arkiv/types"
 
 const ONLINE_PATTERNS = [
@@ -65,6 +68,8 @@ export default function EventDetailPage() {
 
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [approvingWallet, setApprovingWallet] = useState<string | null>(null)
+  const [showQR, setShowQR] = useState(false)
+  const [showScanner, setShowScanner] = useState(false)
 
   // Derived state
   const isHost =
@@ -102,25 +107,6 @@ export default function EventDetailPage() {
       setActionLoading(null)
     }
   }, [cancel, myRsvp, id, reload])
-
-  const handleCheckin = useCallback(async () => {
-    if (!address) return
-    setActionLoading("checkin")
-    try {
-      const client = await getClient()
-      await createCheckin(client, {
-        eventEntityKey: id,
-        attendeeWallet: address,
-        method: "manual",
-        proof: `checkin-${address}-${Date.now()}`,
-      })
-      await reload()
-    } catch (e) {
-      console.error("Checkin failed:", e)
-    } finally {
-      setActionLoading(null)
-    }
-  }, [getClient, address, id, reload])
 
   const handleApprove = useCallback(
     async (attendeeWallet: `0x${string}`, decision: "approved" | "rejected") => {
@@ -282,7 +268,8 @@ export default function EventDetailPage() {
           actionLoading={actionLoading}
           onRsvp={handleRsvp}
           onCancelRsvp={handleCancelRsvp}
-          onCheckin={handleCheckin}
+          onShowQR={() => setShowQR(true)}
+          onShowScanner={() => setShowScanner(true)}
         />
 
         {/* Host: Attendee Management */}
@@ -296,6 +283,29 @@ export default function EventDetailPage() {
           />
         )}
       </div>
+
+      {/* Attendee QR Display */}
+      {address && (
+        <CheckinQRCode
+          open={showQR}
+          onClose={() => setShowQR(false)}
+          attendeeWallet={address}
+          eventTitle={p.title}
+        />
+      )}
+
+      {/* Host QR Scanner */}
+      {isHost && (
+        <QRScanner
+          open={showScanner}
+          onClose={() => setShowScanner(false)}
+          eventId={id}
+          rsvps={activeRsvps}
+          approvals={approvals}
+          needsApproval={needsApproval}
+          onCheckinComplete={() => reload()}
+        />
+      )}
     </div>
   )
 }
@@ -314,7 +324,8 @@ function ActionSection({
   actionLoading,
   onRsvp,
   onCancelRsvp,
-  onCheckin,
+  onShowQR,
+  onShowScanner,
 }: {
   isHost: boolean
   canRsvp: boolean
@@ -327,16 +338,27 @@ function ActionSection({
   actionLoading: string | null
   onRsvp: () => void
   onCancelRsvp: () => void
-  onCheckin: () => void
+  onShowQR: () => void
+  onShowScanner: () => void
 }) {
-  // Host sees attendee management, not action buttons
+  // Host sees scan button + attendee management
   if (isHost) {
     return (
-      <div className="rounded-2xl border border-border bg-card px-4 py-3.5">
-        <p className="text-sm font-medium text-foreground">You&apos;re the host</p>
-        <p className="mt-0.5 text-xs text-muted-foreground">
-          Manage attendees below
-        </p>
+      <div className="flex flex-col gap-3">
+        <div className="rounded-2xl border border-border bg-card px-4 py-3.5">
+          <p className="text-sm font-medium text-foreground">You&apos;re the host</p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Manage attendees below
+          </p>
+        </div>
+        <Button
+          onClick={onShowScanner}
+          size="lg"
+          className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
+        >
+          <ScanLine className="mr-2 h-5 w-5" />
+          Scan Check-in
+        </Button>
       </div>
     )
   }
@@ -371,7 +393,7 @@ function ActionSection({
     )
   }
 
-  // Can check in (approved or no approval needed)
+  // Can check in (approved or no approval needed) — show QR
   if (canCheckin) {
     return (
       <div className="flex flex-col gap-3">
@@ -382,16 +404,12 @@ function ActionSection({
           </div>
         )}
         <Button
-          onClick={onCheckin}
-          disabled={actionLoading === "checkin"}
+          onClick={onShowQR}
           size="lg"
           className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
         >
-          {actionLoading === "checkin" ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking in...</>
-          ) : (
-            "Check In"
-          )}
+          <QrCode className="mr-2 h-5 w-5" />
+          Show Check-in QR
         </Button>
       </div>
     )
@@ -427,7 +445,7 @@ function ActionSection({
     )
   }
 
-  // Pending RSVP, no approval needed — show "You're in" + check-in
+  // Pending RSVP, no approval needed — show "You're in" + QR check-in
   if (hasActiveRsvp && !needsApproval) {
     return (
       <div className="flex flex-col gap-3">
@@ -441,16 +459,12 @@ function ActionSection({
           </div>
         </div>
         <Button
-          onClick={onCheckin}
-          disabled={actionLoading === "checkin"}
+          onClick={onShowQR}
           size="lg"
           className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
         >
-          {actionLoading === "checkin" ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Checking in...</>
-          ) : (
-            "Check In"
-          )}
+          <QrCode className="mr-2 h-5 w-5" />
+          Show Check-in QR
         </Button>
         <Button
           onClick={onCancelRsvp}
