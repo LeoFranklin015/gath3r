@@ -82,11 +82,13 @@ export async function publishEvent(
 
 export async function listPublishedEvents(options?: {
   city?: string
+  hostWallet?: `0x${string}`
 }): Promise<ArkivEntity<EventPayload>[]> {
   const predicates = [
     eq('type', ENTITY_TYPE.EVENT),
     eq('status', 'published'),
     ...(options?.city ? [eq('city', options.city)] : []),
+    ...(options?.hostWallet ? [eq('hostWallet', options.hostWallet)] : []),
   ]
 
   const result = await publicClient

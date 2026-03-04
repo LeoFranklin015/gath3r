@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { Check, Copy, LogOut, User } from "lucide-react";
+import { CalendarDays, Check, Copy, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlobAvatar } from "@/app/components/BlobAvatar";
 import { useProfile } from "@/app/hooks/useProfile";
@@ -94,6 +94,15 @@ export function UserButton() {
             >
               <User className="mr-2 h-3.5 w-3.5" />
               View profile
+            </Button>
+            <Button
+              variant="ghost"
+              role="menuitem"
+              onClick={() => { router.push("/events/hosted"); setOpen(false); }}
+              className="w-full justify-start text-xs"
+            >
+              <CalendarDays className="mr-2 h-3.5 w-3.5" />
+              My Events
             </Button>
             <Button
               variant="ghost"
