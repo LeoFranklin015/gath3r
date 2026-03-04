@@ -14,6 +14,7 @@ export interface CreateEventInput {
   city: string
   startTime: number        // unix timestamp
   data: EventPayload
+  status?: EventStatus     // defaults to 'draft'
 }
 
 export async function createEvent(
@@ -35,7 +36,7 @@ export async function createEvent(
     attributes: [
       { key: 'type', value: ENTITY_TYPE.EVENT },
       { key: 'hostWallet', value: input.hostWallet },
-      { key: 'status', value: 'draft' as EventStatus },
+      { key: 'status', value: input.status ?? 'draft' },
       { key: 'city', value: input.city },
       { key: 'startTime', value: startTime.toString() },
     ],
