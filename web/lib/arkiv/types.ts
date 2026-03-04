@@ -27,6 +27,7 @@ export interface EventPayload {
   requiresApproval: boolean
   tags: string[]
   imageUrl: string
+  ticketPrice: number    // ETH amount, 0 = free
 }
 
 export interface RsvpPayload {

@@ -144,6 +144,7 @@ export default function TestPage() {
         requiresApproval: form.requiresApproval,
         tags: form.tags,
         imageUrl: form.imageUrl,
+        ticketPrice: 0,
       }
       const { entityKey: key } = await createEvent(client, {
         hostWallet: address!,
