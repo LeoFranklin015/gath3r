@@ -62,7 +62,7 @@
   --popover-foreground: oklch(0.12 0.005 260);
 
   /* Arkiv orange — primary brand color */
-  --primary: oklch(0.62 0.20 42);
+  --primary: oklch(0.70 0.155 55);
   --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.96 0.004 85);
@@ -78,9 +78,9 @@
 
   --border: oklch(0.91 0.004 85);
   --input: oklch(0.91 0.004 85);
-  --ring: oklch(0.62 0.20 42);
+  --ring: oklch(0.70 0.155 55);
 
-  --chart-1: oklch(0.62 0.20 42);
+  --chart-1: oklch(0.70 0.155 55);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
@@ -107,7 +107,7 @@
   --popover-foreground: oklch(0.97 0.002 85);
 
   /* Orange stays consistent in dark mode */
-  --primary: oklch(0.67 0.20 42);
+  --primary: oklch(0.74 0.155 55);
   --primary-foreground: oklch(0.99 0 0);
 
   --secondary: oklch(0.22 0.005 260);
@@ -123,9 +123,9 @@
 
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.67 0.20 42);
+  --ring: oklch(0.74 0.155 55);
 
-  --chart-1: oklch(0.67 0.20 42);
+  --chart-1: oklch(0.74 0.155 55);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
@@ -160,4 +160,20 @@
     opacity: 1;
     transform: scale(1);
   }
+}
+
+/* ─── Onboarding step transition ─── */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(30px * var(--step-direction, 1)));
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-step-in {
+  animation: step-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }

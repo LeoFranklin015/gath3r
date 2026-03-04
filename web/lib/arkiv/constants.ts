@@ -20,6 +20,7 @@ export const ENTITY_TYPE = {
 export const EXPIRY_BUFFER_SECS = {
   EVENT: 90 * 24 * 60 * 60,    // 90 days after event end
   APPROVAL: 14 * 24 * 60 * 60, // 14 days after event end
+  CHECKIN: 14 * 24 * 60 * 60,  // 14 days — mint POAP within this window
 } as const
 
 // Seconds between now and a future unix timestamp (minimum 0).

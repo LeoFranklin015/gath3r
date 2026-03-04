@@ -1,8 +1,17 @@
+// Social links
+export type SocialPlatform = 'twitter' | 'instagram' | 'github' | 'website'
+
+export interface SocialLink {
+  platform: SocialPlatform
+  url: string
+}
+
 // Raw entity payloads — stored as JSON in Arkiv
 export interface ProfilePayload {
   displayName: string
   bio: string
   avatar: string         // IPFS URL
+  socialLinks: SocialLink[]
   eventsHosted: number
   eventsAttended: number
   showUpRate: number     // 0-1 float

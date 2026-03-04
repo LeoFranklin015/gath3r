@@ -60,7 +60,7 @@ export default function TestPage() {
     setCreatingProfile(true)
     setProfileError(null)
     try {
-      await createProfile({ displayName: displayName.trim(), bio: bio.trim(), avatar: '' })
+      await createProfile({ displayName: displayName.trim(), bio: bio.trim(), avatar: '', socialLinks: [] })
       setDisplayName('')
       setBio('')
     } catch (err) {

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useArkivWallet } from './useArkivWallet'
-import { createProfile, getProfileByWallet } from '@/lib/arkiv/entities/profile'
+import { createProfile, updateProfile, getProfileByWallet } from '@/lib/arkiv/entities/profile'
 import type { ProfilePayload, ArkivEntity } from '@/lib/arkiv/types'
 
 export function useProfile(walletAddress?: `0x${string}`) {
@@ -29,7 +29,7 @@ export function useProfile(walletAddress?: `0x${string}`) {
   useEffect(() => { load() }, [load])
 
   const create = useCallback(async (
-    data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar'>,
+    data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar' | 'socialLinks'>,
   ) => {
     if (!ownAddress) throw new Error('No wallet connected')
     const client = await getClient()
@@ -38,5 +38,15 @@ export function useProfile(walletAddress?: `0x${string}`) {
     return result
   }, [getClient, ownAddress, load])
 
-  return { profile, loading, error, create, reload: load }
+  const update = useCallback(async (
+    data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar' | 'socialLinks'>,
+  ) => {
+    if (!ownAddress || !profile) throw new Error('No profile to update')
+    const client = await getClient()
+    const txHash = await updateProfile(client, profile.entityKey, ownAddress, data, profile.payload)
+    await load()
+    return txHash
+  }, [getClient, ownAddress, profile, load])
+
+  return { profile, loading, error, create, update, reload: load }
 }
