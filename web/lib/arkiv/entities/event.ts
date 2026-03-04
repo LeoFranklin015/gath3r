@@ -107,6 +107,37 @@ export async function listPublishedEvents(options?: {
   }))
 }
 
+export async function listHostEvents(
+  hostWallet: `0x${string}`,
+): Promise<ArkivEntity<EventPayload>[]> {
+  // Fetch published + unlisted events for the host in parallel
+  const [published, unlisted] = await Promise.all([
+    listPublishedEvents({ hostWallet }),
+    (async () => {
+      const result = await publicClient
+        .buildQuery()
+        .where([
+          eq('type', ENTITY_TYPE.EVENT),
+          eq('status', 'unlisted'),
+          eq('hostWallet', hostWallet),
+        ])
+        .withAttributes(true)
+        .withMetadata(true)
+        .withPayload(true)
+        .fetch()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return result.entities.map((e: any) => ({
+        entityKey: e.key,
+        owner: (e.owner || e.attributes?.find((a: any) => a.key === 'hostWallet')?.value || '') as `0x${string}`,
+        payload: e.toJson() as EventPayload,
+      }))
+    })(),
+  ])
+
+  return [...published, ...unlisted]
+}
+
 export async function getEvent(
   entityKey: string,
 ): Promise<ArkivEntity<EventPayload> | null> {

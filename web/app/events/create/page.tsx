@@ -9,7 +9,11 @@ import { EventImageUpload } from "@/app/components/create-event/EventImageUpload
 import { DateTimeSection } from "@/app/components/create-event/DateTimeSection"
 import { LocationInput } from "@/app/components/create-event/LocationInput"
 import { OptionsSection } from "@/app/components/create-event/OptionsSection"
+import { InviteModal } from "@/app/components/create-event/InviteModal"
 import { useCreateEvent } from "@/app/hooks/useCreateEvent"
+import type { EventPayload } from "@/lib/arkiv/types"
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
 
 function toDatetimeLocal(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0")
@@ -46,6 +50,9 @@ export default function CreateEventPage() {
   const [ticketPrice, setTicketPrice] = useState(0)
   const [requiresApproval, setRequiresApproval] = useState(true)
   const [maxCapacity, setMaxCapacity] = useState(0)
+  const [collectibleAttendance, setCollectibleAttendance] = useState(false)
+  const [unlisted, setUnlisted] = useState(false)
+  const [inviteModal, setInviteModal] = useState<{ event: EventPayload; entityKey: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -64,13 +71,15 @@ export default function CreateEventPage() {
     if (!startTime || !endTime) { setError("Start and end times are required."); return }
     if (end <= start) { setError("End time must be after start time."); return }
 
+    // Use 'unlisted' status when invite-only is enabled and publishing
+    const effectiveStatus = unlisted && status === "published" ? "unlisted" : status
+
     setSubmittingAs(status)
     try {
-      await submit({
+      const eventPayload: EventPayload = {
         title: title.trim(),
         description: description.trim(),
         location: location.trim(),
-        city: city.trim(),
         startTime: start,
         endTime: end,
         maxCapacity,
@@ -78,8 +87,38 @@ export default function CreateEventPage() {
         tags: tags.split(",").map((t) => t.trim()).filter(Boolean),
         imageUrl,
         ticketPrice,
-      }, status)
-      router.push("/home")
+      }
+
+      const result = await submit({
+        ...eventPayload,
+        city: city.trim(),
+      }, effectiveStatus)
+
+      // Deploy POAP collection if collectible attendance is enabled
+      if (collectibleAttendance && result) {
+        try {
+          const name = title.trim().replace(/[^a-zA-Z0-9 ]/g, "").slice(0, 32)
+          const symbol = title.trim().replace(/[^a-zA-Z]/g, "").slice(0, 5).toUpperCase() || "POAP"
+          await fetch(`${BACKEND_URL}/poap/create`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: `${name} Attendance`,
+              symbol,
+              eventId: result.entityKey,
+            }),
+          })
+        } catch (e) {
+          console.error("POAP collection deployment failed:", e)
+        }
+      }
+
+      // Show invite modal for unlisted events, otherwise go home
+      if (unlisted && status === "published" && result) {
+        setInviteModal({ event: eventPayload, entityKey: result.entityKey })
+      } else {
+        router.push("/home")
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -234,12 +273,16 @@ export default function CreateEventPage() {
           ticketPrice={ticketPrice}
           requiresApproval={requiresApproval}
           maxCapacity={maxCapacity}
+          collectibleAttendance={collectibleAttendance}
           onTicketPriceChange={(val) => {
             setTicketPrice(val)
             if (val > 0) setRequiresApproval(false)
           }}
           onRequiresApprovalChange={setRequiresApproval}
           onMaxCapacityChange={setMaxCapacity}
+          onCollectibleAttendanceChange={setCollectibleAttendance}
+          unlisted={unlisted}
+          onUnlistedChange={setUnlisted}
         />
 
         {/* Error */}
@@ -284,6 +327,18 @@ export default function CreateEventPage() {
           </Button>
         </div>
       </div>
+
+      {/* Invite modal for unlisted events */}
+      {inviteModal && (
+        <InviteModal
+          event={inviteModal.event}
+          eventEntityKey={inviteModal.entityKey}
+          onClose={() => {
+            setInviteModal(null)
+            router.push("/home")
+          }}
+        />
+      )}
     </div>
   )
 }

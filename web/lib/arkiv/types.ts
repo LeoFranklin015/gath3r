@@ -68,7 +68,7 @@ export interface WriteResult {
 
 // Status/method union types
 export type RsvpStatus = 'pending' | 'confirmed' | 'waitlisted' | 'cancelled'
-export type EventStatus = 'draft' | 'published' | 'cancelled'
+export type EventStatus = 'draft' | 'published' | 'unlisted' | 'cancelled'
 export type ApprovalDecision = 'approved' | 'rejected' | 'waitlisted'
 export type CheckinMethod = 'qr' | 'nfc' | 'manual'
 

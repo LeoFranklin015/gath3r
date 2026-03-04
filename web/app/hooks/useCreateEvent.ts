@@ -24,7 +24,7 @@ export function useCreateEvent() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const submit = useCallback(async (input: CreateEventInput, status: 'draft' | 'published' = 'published') => {
+  const submit = useCallback(async (input: CreateEventInput, status: 'draft' | 'published' | 'unlisted' = 'published') => {
     if (!address) throw new Error('No wallet connected')
     setLoading(true)
     setError(null)
