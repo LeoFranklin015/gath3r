@@ -11,9 +11,10 @@ import { StepIndicator } from "@/app/components/onboarding/StepIndicator"
 import { NameStep } from "@/app/components/onboarding/NameStep"
 import { BioStep } from "@/app/components/onboarding/BioStep"
 import { SocialLinksStep } from "@/app/components/onboarding/SocialLinksStep"
+import { FundStep } from "@/app/components/onboarding/FundStep"
 import type { OnboardingData } from "@/app/components/onboarding/types"
 
-const TOTAL_STEPS = 3
+const TOTAL_STEPS = 4
 
 export default function OnboardingPage() {
   const { ready, authenticated, user, logout } = usePrivy()
@@ -136,9 +137,10 @@ export default function OnboardingPage() {
             className="flex w-full items-center justify-center animate-step-in"
             style={{ "--step-direction": direction === "forward" ? "1" : "-1" } as React.CSSProperties}
           >
-            {step === 0 && <NameStep {...stepProps} seed={address ?? user?.id ?? ""} />}
-            {step === 1 && <BioStep {...stepProps} />}
-            {step === 2 && <SocialLinksStep {...stepProps} />}
+            {step === 0 && <FundStep address={address ?? ""} onNext={goNext} />}
+            {step === 1 && <NameStep {...stepProps} seed={address ?? user?.id ?? ""} />}
+            {step === 2 && <BioStep {...stepProps} />}
+            {step === 3 && <SocialLinksStep {...stepProps} />}
           </div>
         )}
       </div>
