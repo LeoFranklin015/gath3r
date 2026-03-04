@@ -6,6 +6,7 @@ import { usePrivy } from "@privy-io/react-auth"
 import { LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useProfile } from "@/app/hooks/useProfile"
+import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { StepIndicator } from "@/app/components/onboarding/StepIndicator"
 import { NameStep } from "@/app/components/onboarding/NameStep"
 import { BioStep } from "@/app/components/onboarding/BioStep"
@@ -18,6 +19,7 @@ export default function OnboardingPage() {
   const { ready, authenticated, user, logout } = usePrivy()
   const router = useRouter()
   const { profile, loading: profileLoading, create } = useProfile()
+  const { address } = useArkivWallet()
   const [step, setStep] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [direction, setDirection] = useState<"forward" | "backward">("forward")
@@ -25,6 +27,7 @@ export default function OnboardingPage() {
   const [data, setData] = useState<OnboardingData>({
     displayName: "",
     bio: "",
+    avatar: "",
     socialLinks: [],
   })
 
@@ -61,7 +64,7 @@ export default function OnboardingPage() {
       await create({
         displayName: data.displayName.trim(),
         bio: data.bio.trim(),
-        avatar: "",
+        avatar: data.avatar,
         socialLinks: data.socialLinks.filter((l) => l.url.trim()),
       })
       localStorage.setItem(`gath3r:onboarded:${user.id}`, "true")
@@ -121,7 +124,7 @@ export default function OnboardingPage() {
       </div>
 
       {/* Step content */}
-      <div className="flex flex-1 w-full items-center justify-center overflow-hidden">
+      <div className="flex flex-1 w-full items-center justify-center overflow-hidden px-2">
         {submitting ? (
           <div className="flex flex-col items-center gap-4">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" />
@@ -133,7 +136,7 @@ export default function OnboardingPage() {
             className="flex w-full items-center justify-center animate-step-in"
             style={{ "--step-direction": direction === "forward" ? "1" : "-1" } as React.CSSProperties}
           >
-            {step === 0 && <NameStep {...stepProps} />}
+            {step === 0 && <NameStep {...stepProps} seed={address ?? user?.id ?? ""} />}
             {step === 1 && <BioStep {...stepProps} />}
             {step === 2 && <SocialLinksStep {...stepProps} />}
           </div>

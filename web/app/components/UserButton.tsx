@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { Check, Copy, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { BlobAvatar } from "@/app/components/BlobAvatar";
+import { useProfile } from "@/app/hooks/useProfile";
 
 export function UserButton() {
   const { logout, user } = usePrivy();
@@ -14,7 +16,10 @@ export function UserButton() {
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy");
   const email = user?.email?.address ?? user?.phone?.number ?? "";
-  const initial = email.charAt(0).toUpperCase();
+  const address = embeddedWallet?.address ?? "";
+
+  const { profile } = useProfile();
+  const avatarUrl = profile?.payload?.avatar || undefined;
 
   const copyAddress = () => {
     if (!embeddedWallet) return;
@@ -36,22 +41,24 @@ export function UserButton() {
   return (
     <div className="relative" ref={ref}>
       {/* Avatar trigger */}
-      <Button
-        variant="default"
-        size="icon"
+      <button
         onClick={() => setOpen((o) => !o)}
-        className="h-10 w-10 rounded-full text-sm font-semibold"
+        className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         aria-label="Open user menu"
         aria-expanded={open}
       >
-        {initial}
-      </Button>
+        <BlobAvatar
+          seed={address || user?.id || email}
+          imageUrl={avatarUrl}
+          size={36}
+        />
+      </button>
 
       {/* Dropdown */}
       {open && (
         <div
           role="menu"
-          className="absolute left-1/2 top-12 z-10 w-64 -translate-x-1/2 rounded-2xl border bg-popover p-4 shadow-lg"
+          className="absolute right-0 top-12 z-10 w-64 rounded-2xl border bg-popover p-4 shadow-lg"
         >
           {/* Email */}
           <p className="mb-3 truncate text-xs font-medium text-muted-foreground">
