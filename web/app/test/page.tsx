@@ -224,6 +224,41 @@ export default function TestPage() {
     return result
   })
 
+  // ── Calendar invite ──────────────────────────────────────────────────
+  const [showInviteForm, setShowInviteForm] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [sendingInvite, setSendingInvite] = useState(false)
+
+  async function handleSendInvite(e: React.FormEvent) {
+    e.preventDefault()
+    if (!inviteEmail.trim() || !live.event) return
+    setSendingInvite(true)
+    try {
+      const ev = live.event.payload
+      const res = await fetch(`${BACKEND_URL}/calendar/invite`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: [inviteEmail.trim()],
+          title: ev.title,
+          description: ev.description || '',
+          location: ev.location || '',
+          startTime: ev.startTime,
+          endTime: ev.endTime,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`)
+      setLog(prev => [{ label: 'Send Calendar Invite', data: { to: inviteEmail.trim() } }, ...prev])
+      setInviteEmail('')
+      setShowInviteForm(false)
+    } catch (err) {
+      setLog(prev => [{ label: 'Send Calendar Invite', data: null, error: String(err) }, ...prev])
+    } finally {
+      setSendingInvite(false)
+    }
+  }
+
   // ── 6b. Deploy POAP collection (host) ────────────────────────────────
   const [poapAddress, setPoapAddress] = useState<string | null>(null)
 
@@ -457,6 +492,70 @@ export default function TestPage() {
                     {fmtTime(live.event.payload.startTime)} &rarr; {fmtTime(live.event.payload.endTime)}
                     &nbsp;&middot;&nbsp;host: {short(live.event.owner)}
                   </p>
+                  <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                    <button
+                      onClick={() => {
+                        const e = live.event!.payload
+                        const fmt = (ts: number) => new Date(ts * 1000).toISOString().replace(/[-:]|\.\d{3}/g, '')
+                        const params = new URLSearchParams({
+                          action: 'TEMPLATE',
+                          text: e.title,
+                          dates: `${fmt(e.startTime)}/${fmt(e.endTime)}`,
+                          details: e.description || '',
+                          location: e.location || '',
+                        })
+                        window.open(`https://calendar.google.com/calendar/render?${params}`, '_blank')
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      Google Calendar
+                    </button>
+                    <button
+                      onClick={() => {
+                        const e = live.event!.payload
+                        const params = new URLSearchParams({
+                          title: e.title,
+                          description: e.description || '',
+                          location: e.location || '',
+                          startTime: String(e.startTime),
+                          endTime: String(e.endTime),
+                        })
+                        const url = `${BACKEND_URL}/calendar/download.ics?${params}`
+                        window.open(url, '_blank')
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      Download .ics
+                    </button>
+                    <button
+                      onClick={() => setShowInviteForm(prev => !prev)}
+                      className="inline-flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300"
+                    >
+                      <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                      Email Invite
+                    </button>
+                  </div>
+                  {showInviteForm && (
+                    <form onSubmit={handleSendInvite} className="flex gap-2 mt-2">
+                      <input
+                        type="email"
+                        placeholder="attendee@example.com"
+                        value={inviteEmail}
+                        onChange={e => setInviteEmail(e.target.value)}
+                        required
+                        className="flex-1 rounded-lg bg-zinc-900 border border-zinc-700 px-3 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                      />
+                      <button
+                        type="submit"
+                        disabled={sendingInvite || !inviteEmail.trim()}
+                        className="rounded-lg bg-purple-600 hover:bg-purple-500 disabled:opacity-50 px-3 py-1.5 text-xs font-medium text-white"
+                      >
+                        {sendingInvite ? 'Sending…' : 'Send'}
+                      </button>
+                    </form>
+                  )}
                 </div>
 
                 {/* RSVPs list */}
