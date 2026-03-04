@@ -25,7 +25,7 @@ import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createApproval } from "@/lib/arkiv/entities/approval"
 import { CheckinQRCode } from "@/app/components/event-detail/CheckinQRCode"
 import { QRScanner } from "@/app/components/event-detail/QRScanner"
-import type { RsvpEntity } from "@/lib/arkiv/types"
+import type { RsvpEntity, CheckinEntity } from "@/lib/arkiv/types"
 
 const ONLINE_PATTERNS = [
   "zoom.us",
@@ -62,7 +62,7 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { getClient, address } = useArkivWallet()
-  const { event, rsvps, approvals, myRsvp, myApproval, myCheckin, loading, reload } =
+  const { event, rsvps, approvals, checkins, myRsvp, myApproval, myCheckin, loading, reload } =
     useEventDetail(id)
   const { rsvp, cancel } = useRsvp()
 
@@ -277,6 +277,7 @@ export default function EventDetailPage() {
           <AttendeeList
             rsvps={activeRsvps}
             approvals={approvals}
+            checkins={checkins}
             needsApproval={needsApproval}
             approvingWallet={approvingWallet}
             onApprove={handleApprove}
@@ -500,80 +501,143 @@ function ActionSection({
   return null
 }
 
-/* ─── Attendee List (Host View) ─── */
+/* ─── Attendee List (Host View) with Tabs ─── */
 
 function AttendeeList({
   rsvps,
   approvals,
+  checkins,
   needsApproval,
   approvingWallet,
   onApprove,
 }: {
   rsvps: RsvpEntity[]
   approvals: { attendeeWallet: string; decision: string }[]
+  checkins: CheckinEntity[]
   needsApproval: boolean
   approvingWallet: string | null
   onApprove: (wallet: `0x${string}`, decision: "approved" | "rejected") => void
 }) {
+  const [tab, setTab] = useState<"pending" | "checked-in">("pending")
+
+  const checkedInWallets = new Set(
+    checkins.map((c) => c.attendeeWallet.toLowerCase()),
+  )
+
+  const checkedInRsvps = rsvps.filter((r) =>
+    checkedInWallets.has(r.attendeeWallet.toLowerCase()),
+  )
+  const pendingRsvps = rsvps.filter(
+    (r) => !checkedInWallets.has(r.attendeeWallet.toLowerCase()),
+  )
+
+  const activeList = tab === "checked-in" ? checkedInRsvps : pendingRsvps
+
   return (
     <div className="mt-5">
-      <h3 className="mb-3 text-sm font-semibold text-foreground">
-        Attendees ({rsvps.length})
-      </h3>
-      <div className="overflow-hidden rounded-2xl border border-border">
-        {rsvps.map((r, i) => {
-          const approval = approvals.find(
-            (a) => a.attendeeWallet.toLowerCase() === r.attendeeWallet.toLowerCase(),
-          )
-          const isApproving = approvingWallet?.toLowerCase() === r.attendeeWallet.toLowerCase()
+      {/* Tab bar */}
+      <div className="mb-3 flex gap-1 rounded-xl bg-muted/60 p-1">
+        <button
+          onClick={() => setTab("pending")}
+          className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+            tab === "pending"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Pending
+          {pendingRsvps.length > 0 && (
+            <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-100 px-1 text-[10px] font-bold text-amber-700">
+              {pendingRsvps.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setTab("checked-in")}
+          className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors ${
+            tab === "checked-in"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Checked In
+          {checkedInRsvps.length > 0 && (
+            <span className="ml-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-green-100 px-1 text-[10px] font-bold text-green-700">
+              {checkedInRsvps.length}
+            </span>
+          )}
+        </button>
+      </div>
 
-          return (
-            <div
-              key={r.entityKey}
-              className={`flex items-center justify-between bg-card px-4 py-3 ${
-                i < rsvps.length - 1 ? "border-b border-border" : ""
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-foreground">
-                  {short(r.attendeeWallet)}
-                </span>
-                {approval ? (
-                  <StatusBadge decision={approval.decision} />
-                ) : (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-                    Pending
+      {/* List */}
+      {activeList.length === 0 ? (
+        <div className="rounded-2xl border border-border bg-card px-4 py-6 text-center">
+          <p className="text-xs text-muted-foreground">
+            {tab === "checked-in" ? "No one has checked in yet" : "No pending attendees"}
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-hidden rounded-2xl border border-border">
+          {activeList.map((r, i) => {
+            const approval = approvals.find(
+              (a) => a.attendeeWallet.toLowerCase() === r.attendeeWallet.toLowerCase(),
+            )
+            const isCheckedIn = checkedInWallets.has(r.attendeeWallet.toLowerCase())
+            const isApproving = approvingWallet?.toLowerCase() === r.attendeeWallet.toLowerCase()
+
+            return (
+              <div
+                key={r.entityKey}
+                className={`flex items-center justify-between bg-card px-4 py-3 ${
+                  i < activeList.length - 1 ? "border-b border-border" : ""
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-xs text-foreground">
+                    {short(r.attendeeWallet)}
                   </span>
-                )}
-              </div>
-
-              {/* Approve/Reject buttons */}
-              {needsApproval && !approval && (
-                <div className="flex items-center gap-1.5">
-                  {isApproving ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  {isCheckedIn ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
+                      <Check className="h-2.5 w-2.5" />
+                      Checked in
+                    </span>
+                  ) : approval ? (
+                    <StatusBadge decision={approval.decision} />
                   ) : (
-                    <>
-                      <button
-                        onClick={() => onApprove(r.attendeeWallet, "approved")}
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-green-700 transition-colors hover:bg-green-200"
-                      >
-                        <Check className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        onClick={() => onApprove(r.attendeeWallet, "rejected")}
-                        className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-700 transition-colors hover:bg-red-200"
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                    </>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                      Pending
+                    </span>
                   )}
                 </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+
+                {/* Approve/Reject buttons — only on pending tab, only if needs approval */}
+                {!isCheckedIn && needsApproval && !approval && (
+                  <div className="flex items-center gap-1.5">
+                    {isApproving ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => onApprove(r.attendeeWallet, "approved")}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-green-100 text-green-700 transition-colors hover:bg-green-200"
+                        >
+                          <Check className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => onApprove(r.attendeeWallet, "rejected")}
+                          className="flex h-7 w-7 items-center justify-center rounded-full bg-red-100 text-red-700 transition-colors hover:bg-red-200"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

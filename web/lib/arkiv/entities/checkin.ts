@@ -2,7 +2,7 @@ import { jsonToPayload } from '@arkiv-network/sdk'
 import { eq } from '@arkiv-network/sdk/query'
 import { publicClient } from '@/lib/arkiv/client'
 import { ENTITY_TYPE, EXPIRY_BUFFER_SECS, secondsUntil } from '@/lib/arkiv/constants'
-import type { CheckinPayload, ArkivEntity, WriteResult, CheckinMethod } from '@/lib/arkiv/types'
+import type { CheckinPayload, ArkivEntity, CheckinEntity, WriteResult, CheckinMethod } from '@/lib/arkiv/types'
 import { getEvent } from './event'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,6 +41,33 @@ export async function createCheckin(
   })
 
   return { entityKey, txHash }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function entityToCheckin(e: any): CheckinEntity {
+  const attr = (key: string) => e.attributes?.find((a: any) => a.key === key)?.value ?? ''
+  return {
+    entityKey: e.key,
+    owner: (e.owner || attr('attendeeWallet')) as `0x${string}`,
+    attendeeWallet: (attr('attendeeWallet') || e.owner || '') as `0x${string}`,
+    method: (attr('method') || 'manual') as CheckinMethod,
+    payload: e.toJson() as CheckinPayload,
+  }
+}
+
+export async function listCheckinsForEvent(eventEntityKey: string): Promise<CheckinEntity[]> {
+  const result = await publicClient
+    .buildQuery()
+    .where([
+      eq('type', ENTITY_TYPE.CHECKIN),
+      eq('eventId', eventEntityKey),
+    ])
+    .withAttributes(true)
+    .withMetadata(true)
+    .withPayload(true)
+    .fetch()
+
+  return result.entities.map(entityToCheckin)
 }
 
 export async function getCheckin(
