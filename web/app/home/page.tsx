@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation"
 import { usePrivy } from "@privy-io/react-auth"
 import { UserButton } from "@/app/components/UserButton"
 import { useMyEvents } from "@/app/hooks/useMyEvents"
+import { useEvents } from "@/app/hooks/useEvents"
 import { EventCard } from "@/app/components/EventCard"
-import { Plus } from "lucide-react"
+import { Plus, Compass, CalendarCheck } from "lucide-react"
 import type { EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 
-type Tab = "going" | "pending"
+type Tab = "discover" | "attending"
 
 interface DateGroup {
   label: { primary: string; secondary: string }
@@ -66,23 +67,32 @@ function groupByDate(events: ArkivEntity<EventPayload>[]): DateGroup[] {
 export default function HomePage() {
   const { ready, authenticated } = usePrivy()
   const router = useRouter()
-  const { going, pending, statusMap, loading } = useMyEvents()
-  const [tab, setTab] = useState<Tab>("going")
+  const { going, pending, statusMap, loading: myLoading } = useMyEvents()
+  const { events: publicEvents, loading: discoverLoading } = useEvents()
+  const [tab, setTab] = useState<Tab>("discover")
 
   useEffect(() => {
     if (ready && !authenticated) router.replace("/")
   }, [ready, authenticated, router])
 
-  const sortedGoing = useMemo(
-    () => [...going].sort((a, b) => a.payload.startTime - b.payload.startTime),
-    [going],
-  )
-  const sortedPending = useMemo(
-    () => [...pending].sort((a, b) => a.payload.startTime - b.payload.startTime),
-    [pending],
+  // Merge going + pending, sorted by startTime (going first within same time)
+  const allMyEvents = useMemo(() => {
+    const merged = [...going, ...pending]
+    return merged.sort((a, b) => a.payload.startTime - b.payload.startTime)
+  }, [going, pending])
+
+  const sortedDiscover = useMemo(
+    () => [...publicEvents].sort((a, b) => a.payload.startTime - b.payload.startTime),
+    [publicEvents],
   )
 
-  const activeEvents = tab === "going" ? sortedGoing : sortedPending
+  const activeEvents = tab === "discover" ? sortedDiscover : allMyEvents
+  const isLoading = tab === "discover" ? discoverLoading : myLoading
+  type TabIcon = typeof Compass
+  const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
+    { key: "discover", label: "Discover", icon: Compass },
+    { key: "attending", label: "Attending", icon: CalendarCheck },
+  ]
   const dateGroups = useMemo(() => groupByDate(activeEvents), [activeEvents])
 
   if (!ready || !authenticated) {
@@ -103,37 +113,31 @@ export default function HomePage() {
 
       {/* Tabs — full-width with underline */}
       <div className="flex border-b border-border/60">
-        <button
-          onClick={() => setTab("going")}
-          className={`flex-1 pb-3 pt-2 text-center text-[15px] font-semibold transition-colors ${
-            tab === "going"
-              ? "text-foreground"
-              : "text-muted-foreground"
-          }`}
-        >
-          Going
-          {tab === "going" && (
-            <div className="mx-auto mt-2 h-[2px] w-14 rounded-full bg-foreground" />
-          )}
-        </button>
-        <button
-          onClick={() => setTab("pending")}
-          className={`flex-1 pb-3 pt-2 text-center text-[15px] font-semibold transition-colors ${
-            tab === "pending"
-              ? "text-foreground"
-              : "text-muted-foreground"
-          }`}
-        >
-          Pending
-          {tab === "pending" && (
-            <div className="mx-auto mt-2 h-[2px] w-16 rounded-full bg-foreground" />
-          )}
-        </button>
+        {tabConfig.map((t) => {
+          const Icon = t.icon
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex-1 pb-3 pt-2 text-center text-[15px] font-semibold transition-colors ${
+                tab === t.key ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              <span className="inline-flex items-center gap-1.5">
+                <Icon className="h-4 w-4" />
+                {t.label}
+              </span>
+              {tab === t.key && (
+                <div className="mx-auto mt-2 h-[2px] w-14 rounded-full bg-foreground" />
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Content */}
       <main className="flex-1 overflow-y-auto pb-24">
-        {loading ? (
+        {isLoading ? (
           <div className="flex justify-center py-16">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
           </div>
@@ -159,7 +163,7 @@ export default function HomePage() {
                     <div key={event.entityKey}>
                       <EventCard
                         event={event}
-                        status={statusMap.get(event.entityKey)}
+                        status={tab === "attending" ? statusMap.get(event.entityKey) : undefined}
                         onClick={() =>
                           router.push(`/events/${event.entityKey}`)
                         }
@@ -195,16 +199,18 @@ function EmptyState({ tab }: { tab: Tab }) {
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-3">
       <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
-        <span className="text-2xl">{tab === "going" ? "📅" : "📋"}</span>
+        <span className="text-2xl">
+          {tab === "discover" ? "🔍" : "📅"}
+        </span>
       </div>
       <div className="text-center">
         <p className="text-sm font-medium text-foreground">
-          {tab === "going" ? "No events yet" : "No pending events"}
+          {tab === "discover" ? "No events found" : "No events yet"}
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {tab === "going"
-            ? "Events you RSVP to will show here"
-            : "Pending events will appear here"}
+          {tab === "discover"
+            ? "Check back later for new events"
+            : "Events you RSVP to will show here"}
         </p>
       </div>
     </div>

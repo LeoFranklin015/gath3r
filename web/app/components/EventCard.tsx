@@ -40,10 +40,12 @@ export function EventCard({ event, status, onClick }: EventCardProps) {
     ? p.location.includes("zoom") ? "Zoom" : "Online"
     : p.location
 
+  const isPending = status === "pending"
+
   return (
     <button
       onClick={onClick}
-      className="w-full text-left transition-opacity active:opacity-70"
+      className={`w-full text-left transition-opacity active:opacity-70 ${isPending ? "opacity-55" : ""}`}
     >
       <div className="flex gap-3 py-3">
         {/* Thumbnail — left */}

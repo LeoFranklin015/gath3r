@@ -8,8 +8,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { BlobAvatar } from "@/app/components/BlobAvatar"
+import { EventCard } from "@/app/components/EventCard"
 import { useProfile } from "@/app/hooks/useProfile"
-import type { SocialPlatform, SocialLink } from "@/lib/arkiv/types"
+import { useMyEvents } from "@/app/hooks/useMyEvents"
+import type { SocialPlatform, SocialLink, EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 
 const BIO_MAX_LENGTH = 160
 
@@ -32,6 +34,7 @@ export default function ProfilePage() {
   const { wallets } = useWallets()
   const router = useRouter()
   const { profile, loading, update, reload } = useProfile()
+  const { going, pending, statusMap, loading: eventsLoading } = useMyEvents()
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy")
   const address = embeddedWallet?.address ?? ""
@@ -321,6 +324,16 @@ export default function ProfilePage() {
           </Button>
         )}
       </div>
+
+      {/* Events list — only show when not editing */}
+      {!editing && (
+        <MyEventsList
+          going={going}
+          pending={pending}
+          statusMap={statusMap}
+          loading={eventsLoading}
+        />
+      )}
     </div>
   )
 }
@@ -353,6 +366,60 @@ function socialHref(link: SocialLink): string {
     case "github": return `https://github.com/${link.url}`
     case "website": return link.url.startsWith("http") ? link.url : `https://${link.url}`
   }
+}
+
+function MyEventsList({
+  going,
+  pending,
+  statusMap,
+  loading,
+}: {
+  going: ArkivEntity<EventPayload>[]
+  pending: ArkivEntity<EventPayload>[]
+  statusMap: Map<string, "going" | "pending">
+  loading: boolean
+}) {
+  const router = useRouter()
+  const allEvents = [...going, ...pending].sort(
+    (a, b) => a.payload.startTime - b.payload.startTime,
+  )
+
+  return (
+    <div className="relative z-10">
+      <div className="border-t border-border/60 px-5 pt-4 pb-10">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
+          Events
+        </p>
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-border border-t-primary" />
+          </div>
+        ) : allEvents.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-2">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/50">
+              <span className="text-xl">📅</span>
+            </div>
+            <p className="text-sm text-muted-foreground">No events yet</p>
+          </div>
+        ) : (
+          <div>
+            {allEvents.map((event, i) => (
+              <div key={event.entityKey}>
+                <EventCard
+                  event={event}
+                  status={statusMap.get(event.entityKey)}
+                  onClick={() => router.push(`/events/${event.entityKey}`)}
+                />
+                {i < allEvents.length - 1 && (
+                  <div className="h-px bg-border/50" />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
 }
 
 function PlatformIcon({ platform, size = 18 }: { platform: SocialPlatform; size?: number }) {
