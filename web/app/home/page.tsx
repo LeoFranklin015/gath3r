@@ -1,16 +1,50 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePrivy } from "@privy-io/react-auth";
 import { UserButton } from "@/app/components/UserButton";
 import { useEvents } from "@/app/hooks/useEvents";
 import { EventCard } from "@/app/components/EventCard";
+import { Button } from "@/components/ui/button";
+import { getProfileByWallet, deleteProfile } from "@/lib/arkiv/entities/profile";
+import { useArkivWallet } from "@/app/hooks/useArkivWallet";
+
+const TARGET_WALLET = "0x81a0901D3f1aE2edb8FE682bEC8F58F237C37132" as `0x${string}`;
 
 export default function HomePage() {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, user } = usePrivy();
   const router = useRouter();
   const { events, loading: eventsLoading } = useEvents();
+  const { getClient } = useArkivWallet();
+  const [deleting, setDeleting] = useState(false);
+  const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
+
+  const handleDeleteProfile = async () => {
+    setDeleting(true);
+    setDeleteStatus(null);
+    try {
+      const profile = await getProfileByWallet(TARGET_WALLET);
+      if (!profile) {
+        setDeleteStatus("No profile found — clearing local flags...");
+      } else {
+        const client = await getClient();
+        const txHash = await deleteProfile(client, profile.entityKey);
+        setDeleteStatus(`Deleted! tx: ${txHash.slice(0, 10)}...`);
+      }
+      // Clear localStorage onboarding flags so the user hits onboarding again
+      if (user) {
+        localStorage.removeItem(`gath3r:onboarded:${user.id}`);
+        localStorage.removeItem(`gath3r:name:${user.id}`);
+      }
+      // Redirect to onboarding
+      setTimeout(() => router.replace("/onboarding"), 500);
+    } catch (e) {
+      setDeleteStatus(`Error: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   useEffect(() => {
     if (ready && !authenticated) router.replace("/");
@@ -31,6 +65,22 @@ export default function HomePage() {
         <span className="text-lg font-bold text-white">Gath3r</span>
         <UserButton />
       </header>
+
+      {/* Temp: Delete profile button */}
+      <div className="px-4 py-3 border-b border-zinc-800/60 space-y-2">
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={handleDeleteProfile}
+          disabled={deleting}
+          className="w-full"
+        >
+          {deleting ? "Deleting..." : `Delete profile: ${TARGET_WALLET.slice(0, 6)}...${TARGET_WALLET.slice(-4)}`}
+        </Button>
+        {deleteStatus && (
+          <p className="text-xs text-zinc-400 text-center">{deleteStatus}</p>
+        )}
+      </div>
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto px-4 py-4 space-y-3">

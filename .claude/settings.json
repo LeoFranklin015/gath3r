@@ -4,7 +4,9 @@
       "Bash(npm install @privy-io/react-auth viem)",
       "Bash(npx shadcn@latest init -d)",
       "Bash(npx shadcn@latest add button -y)",
-      "Bash(npx shadcn@latest add input -y)"
+      "Bash(npx shadcn@latest add input -y)",
+      "WebFetch(domain:www.saasframe.io)",
+      "Bash(npx next build)"
     ]
   }
 }

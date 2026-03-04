@@ -29,7 +29,7 @@ export function useProfile(walletAddress?: `0x${string}`) {
   useEffect(() => { load() }, [load])
 
   const create = useCallback(async (
-    data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar'>,
+    data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar' | 'socialLinks'>,
   ) => {
     if (!ownAddress) throw new Error('No wallet connected')
     const client = await getClient()

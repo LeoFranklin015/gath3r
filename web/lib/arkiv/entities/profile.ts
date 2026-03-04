@@ -10,7 +10,7 @@ type WalletClient = any
 export async function createProfile(
   walletClient: WalletClient,
   address: `0x${string}`,
-  data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar'>,
+  data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar' | 'socialLinks'>,
 ): Promise<WriteResult> {
   const payload: ProfilePayload = {
     ...data,
@@ -25,6 +25,7 @@ export async function createProfile(
     attributes: [
       { key: 'type', value: ENTITY_TYPE.PROFILE },
       { key: 'wallet', value: address },
+      { key: 'ensName', value: data.displayName },
     ],
     expiresIn: EXPIRES_IN.PROFILE,
   })
@@ -61,6 +62,14 @@ export async function renewProfile(
     entityKey,
     expiresIn: EXPIRES_IN.PROFILE,
   })
+  return txHash
+}
+
+export async function deleteProfile(
+  walletClient: WalletClient,
+  entityKey: string,
+): Promise<string> {
+  const { txHash } = await walletClient.deleteEntity({ entityKey })
   return txHash
 }
 
