@@ -15,6 +15,8 @@ import { createApproval, listApprovalsForEvent, getApprovalForAttendee } from '@
 import type { EventPayload, ArkivEntity, RsvpEntity, ApprovalEntity, CheckinPayload } from '@/lib/arkiv/types'
 import { CreateEventModal, type EventFormData } from '@/app/components/CreateEventModal'
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+
 // ── Live state for selected event ────────────────────────────────────────────
 interface LiveState {
   event: ArkivEntity<EventPayload> | null
@@ -221,6 +223,56 @@ export default function TestPage() {
     return result
   })
 
+  // ── 6b. Deploy POAP collection (host) ────────────────────────────────
+  const [poapAddress, setPoapAddress] = useState<string | null>(null)
+
+  const doDeployPOAP = () => run('Deploy POAP Collection', async () => {
+    if (!eventKey) throw new Error('No event selected')
+    if (!live.event) throw new Error('Event not loaded yet')
+
+    const title = live.event.payload.title
+    // Generate a short symbol from the title (first letters, max 6 chars)
+    const symbol = title
+      .split(/\s+/)
+      .map((w: string) => w[0]?.toUpperCase())
+      .join('')
+      .slice(0, 6) || 'POAP'
+
+    const res = await fetch(`${BACKEND_URL}/poap/create`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: `${title} POAP`,
+        symbol,
+        eventId: eventKey,
+      }),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`)
+
+    setPoapAddress(json.poapAddress)
+    return { poapAddress: json.poapAddress, txHash: json.txHash, name: `${title} POAP`, symbol }
+  })
+
+  // ── 7. Mint POAP (backend pays gas) ──────────────────────────────────
+  const doMintPOAP = () => run('Mint POAP', async () => {
+    if (!address) throw new Error('No wallet address')
+
+    const res = await fetch(`${BACKEND_URL}/poap/mint`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        eventId: eventKey,
+        attendee: address,
+        tokenURI: `ipfs://poap-metadata/${eventKey}/${address}`,
+      }),
+    })
+    const json = await res.json()
+    if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`)
+
+    return { txHash: json.txHash, poapAddress: json.poapAddress, attendee: address }
+  })
+
   // ── Derived state ─────────────────────────────────────────────────────────
   const rsvpsWithApproval = live.rsvps
     .filter(r => r.status !== 'cancelled')
@@ -239,6 +291,7 @@ export default function TestPage() {
   const canCheckin = canAct && myRsvpActive && !live.myCheckin && (
     !live.event?.payload.requiresApproval || live.myApproval?.decision === 'approved'
   )
+  const canMintPOAP = canAct && !!eventKey && !!live.myCheckin
   const secsAgo = live.lastRefreshed ? Math.round((Date.now() - live.lastRefreshed) / 1000) : null
 
   return (
@@ -586,6 +639,54 @@ export default function TestPage() {
                       ? '\u2713 Approved \u2014 you can check in now.'
                       : 'Waiting for host approval (Step 3).'
                     : '\u2713 No approval required \u2014 you can check in.'
+            }
+          </p>
+        </Section>
+
+        {/* ── Step 5 — Host: Deploy POAP Collection ────────────────────── */}
+        <Section title="Step 5 · Host — Deploy POAP Collection">
+          <Button
+            size="sm"
+            disabled={!canAct || !eventKey || !live.event || !!poapAddress || running === 'Deploy POAP Collection'}
+            onClick={doDeployPOAP}
+            className="rounded-xl text-xs h-7 px-3"
+          >
+            {running === 'Deploy POAP Collection' ? '⏳ Deploying\u2026' : 'Deploy POAP Collection'}
+          </Button>
+          {poapAddress && (
+            <div className="rounded-xl bg-zinc-900 border border-zinc-800 px-3 py-2 space-y-1">
+              <p className="text-xs text-green-400 font-medium">{'\u2713'} POAP collection deployed</p>
+              <p className="text-xs font-mono text-zinc-400 break-all">{poapAddress}</p>
+            </div>
+          )}
+          <p className="text-xs text-zinc-600">
+            {!eventKey
+              ? 'Select an event above first.'
+              : !live.event
+                ? 'Waiting for event to load\u2026'
+                : poapAddress
+                  ? 'Collection is live on Arbitrum Sepolia. Attendees can now mint after checking in.'
+                  : `Will deploy "${live.event.payload.title} POAP" on Arbitrum Sepolia using event details from Arkiv.`
+            }
+          </p>
+        </Section>
+
+        {/* ── Step 6 — Attendee: Mint POAP ──────────────────────────────── */}
+        <Section title="Step 6 · Attendee — Mint POAP">
+          <Button
+            size="sm"
+            disabled={!canMintPOAP || running === 'Mint POAP'}
+            onClick={doMintPOAP}
+            className="rounded-xl text-xs h-7 px-3"
+          >
+            {running === 'Mint POAP' ? '⏳ Minting\u2026' : 'Mint POAP'}
+          </Button>
+          <p className="text-xs text-zinc-600">
+            {!hasProfile
+              ? 'Create a profile first.'
+              : !live.myCheckin
+                ? 'Check in first (Step 4).'
+                : 'Mint your soulbound POAP on Arbitrum Sepolia. Backend signs the voucher, your wallet submits the tx.'
             }
           </p>
         </Section>
