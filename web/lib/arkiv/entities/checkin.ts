@@ -21,7 +21,7 @@ export async function createCheckin(
 ): Promise<WriteResult> {
   const event = await getEvent(input.eventEntityKey)
   if (!event) throw new Error('Event not found')
-  const expiresIn = Math.floor(secondsUntil(event.payload.endTime) + EXPIRY_BUFFER_SECS.EVENT)
+  const expiresIn = Math.floor(secondsUntil(event.payload.endTime) + EXPIRY_BUFFER_SECS.CHECKIN)
 
   const payload: CheckinPayload = {
     checkedInAt: Math.floor(Date.now() / 1000),

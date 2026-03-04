@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getEvent } from '@/lib/arkiv/entities/event'
 import { listRsvpsForEvent } from '@/lib/arkiv/entities/rsvp'
-import type { EventPayload, RsvpPayload, ArkivEntity } from '@/lib/arkiv/types'
+import type { EventPayload, ArkivEntity, RsvpEntity } from '@/lib/arkiv/types'
 
 export function useEvent(entityKey: string) {
   const [event, setEvent] = useState<ArkivEntity<EventPayload> | null>(null)
-  const [rsvps, setRsvps] = useState<ArkivEntity<RsvpPayload>[]>([])
+  const [rsvps, setRsvps] = useState<RsvpEntity[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
