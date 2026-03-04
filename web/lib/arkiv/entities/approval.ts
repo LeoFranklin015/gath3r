@@ -72,6 +72,23 @@ export async function listApprovalsForEvent(eventEntityKey: string): Promise<App
   return result.entities.map(entityToApproval)
 }
 
+export async function listApprovalsForWallet(
+  attendeeWallet: `0x${string}`,
+): Promise<ApprovalEntity[]> {
+  const result = await publicClient
+    .buildQuery()
+    .where([
+      eq('type', ENTITY_TYPE.APPROVAL),
+      eq('attendeeWallet', attendeeWallet),
+    ])
+    .withAttributes(true)
+    .withMetadata(true)
+    .withPayload(true)
+    .fetch()
+
+  return result.entities.map(entityToApproval)
+}
+
 export async function getApprovalForAttendee(
   eventEntityKey: string,
   attendeeWallet: `0x${string}`,
