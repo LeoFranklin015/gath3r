@@ -1,5 +1,21 @@
 import { defineChain } from "viem";
 
+export const arbitrumSepolia = defineChain({
+  id: 421614,
+  name: "Arbitrum Sepolia",
+  nativeCurrency: {
+    name: "Ether",
+    symbol: "ETH",
+    decimals: 18,
+  },
+  rpcUrls: {
+    default: {
+      http: ["https://sepolia-rollup.arbitrum.io/rpc"],
+    },
+  },
+  testnet: true,
+});
+
 export const kaolin = defineChain({
   id: 60138453025,
   name: "Kaolin",

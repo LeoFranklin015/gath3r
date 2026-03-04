@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
-import { kaolin } from "@/lib/chains";
+import { kaolin, arbitrumSepolia } from "@/lib/chains";
 
 // Privy v3 leaks `isActive` onto DOM elements — suppress the React warning
 function useSuppressPrivyWarning() {
@@ -24,7 +24,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       config={{
         loginMethods: ["email"],
         defaultChain: kaolin,
-        supportedChains: [kaolin],
+        supportedChains: [kaolin, arbitrumSepolia],
         embeddedWallets: {
           ethereum: {
             createOnLogin: "users-without-wallets",

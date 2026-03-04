@@ -11,6 +11,12 @@ export function useArkivWallet() {
   const { wallets } = useWallets()
   const embeddedWallet = wallets.find(w => w.walletClientType === 'privy')
 
+  const getProvider = useCallback(async () => {
+    if (!embeddedWallet) throw new Error('No embedded wallet found. Please log in.')
+    await embeddedWallet.switchChain(kaolin.id)
+    return embeddedWallet.getEthereumProvider()
+  }, [embeddedWallet])
+
   const getClient = useCallback(async () => {
     if (!embeddedWallet) throw new Error('No embedded wallet found. Please log in.')
     // Ensure the embedded wallet is on Kaolin before transacting
@@ -24,6 +30,7 @@ export function useArkivWallet() {
 
   return {
     getClient,
+    getProvider,
     address: embeddedWallet?.address as `0x${string}` | undefined,
     ready: !!embeddedWallet,
   }

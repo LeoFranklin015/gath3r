@@ -22,6 +22,8 @@ import { Button } from "@/components/ui/button"
 import { useEventDetail } from "@/app/hooks/useEventDetail"
 import { useRsvp } from "@/app/hooks/useRsvp"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
+import { useWallets } from "@privy-io/react-auth"
+import { arbitrumSepolia } from "@/lib/chains"
 import { createApproval } from "@/lib/arkiv/entities/approval"
 import { CheckinQRCode } from "@/app/components/event-detail/CheckinQRCode"
 import { QRScanner } from "@/app/components/event-detail/QRScanner"
@@ -62,6 +64,7 @@ export default function EventDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { getClient, address } = useArkivWallet()
+  const { wallets } = useWallets()
   const { event, rsvps, approvals, checkins, myRsvp, myApproval, myCheckin, loading, reload } =
     useEventDetail(id)
   const { rsvp, cancel } = useRsvp()
@@ -86,14 +89,34 @@ export default function EventDetailPage() {
   const handleRsvp = useCallback(async () => {
     setActionLoading("rsvp")
     try {
-      await rsvp(id)
+      let paymentTxHash: string | undefined
+      // If paid event, transfer ticket fee to host on Arbitrum Sepolia
+      // (Kaolin only supports Arkiv entity transactions, not plain ETH transfers)
+      const ticketPrice = event?.payload.ticketPrice ?? 0
+      if (ticketPrice > 0 && event && address) {
+        const embeddedWallet = wallets.find(w => w.walletClientType === "privy")
+        if (!embeddedWallet) throw new Error("No embedded wallet found")
+        await embeddedWallet.switchChain(arbitrumSepolia.id)
+        const provider = await embeddedWallet.getEthereumProvider()
+        const weiValue = BigInt(Math.round(ticketPrice * 1e18))
+        paymentTxHash = await provider.request({
+          method: "eth_sendTransaction",
+          params: [{
+            from: address,
+            to: event.owner,
+            value: "0x" + weiValue.toString(16),
+          }],
+        })
+      }
+      // Create RSVP entity on Kaolin (useRsvp switches back to Kaolin internally)
+      await rsvp(id, undefined, paymentTxHash)
       await reload()
     } catch (e) {
       console.error("RSVP failed:", e)
     } finally {
       setActionLoading(null)
     }
-  }, [rsvp, id, reload])
+  }, [rsvp, id, reload, event, address, wallets])
 
   const handleCancelRsvp = useCallback(async () => {
     if (!myRsvp) return
@@ -266,6 +289,7 @@ export default function EventDetailPage() {
           myApproval={myApproval}
           myCheckin={myCheckin}
           actionLoading={actionLoading}
+          ticketPrice={price}
           onRsvp={handleRsvp}
           onCancelRsvp={handleCancelRsvp}
           onShowQR={() => setShowQR(true)}
@@ -323,6 +347,7 @@ function ActionSection({
   myApproval,
   myCheckin,
   actionLoading,
+  ticketPrice,
   onRsvp,
   onCancelRsvp,
   onShowQR,
@@ -337,6 +362,7 @@ function ActionSection({
   myApproval: { decision: string } | null
   myCheckin: unknown
   actionLoading: string | null
+  ticketPrice: number
   onRsvp: () => void
   onCancelRsvp: () => void
   onShowQR: () => void
@@ -490,7 +516,9 @@ function ActionSection({
         className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25"
       >
         {actionLoading === "rsvp" ? (
-          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Applying...</>
+          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {ticketPrice > 0 ? "Processing Payment..." : "Applying..."}</>
+        ) : ticketPrice > 0 ? (
+          <><Ticket className="mr-2 h-4 w-4" /> Pay {ticketPrice} ETH & Apply</>
         ) : (
           "Apply to Event"
         )}

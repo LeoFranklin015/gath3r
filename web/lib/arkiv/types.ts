@@ -33,6 +33,7 @@ export interface EventPayload {
 export interface RsvpPayload {
   message: string
   createdAt: number      // unix timestamp
+  paymentTxHash?: string // Arbitrum Sepolia tx hash for paid events
 }
 
 export interface EventRecordPayload {

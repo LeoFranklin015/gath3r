@@ -12,6 +12,7 @@ export interface CreateRsvpInput {
   eventEntityKey: string
   attendeeWallet: `0x${string}`
   message?: string
+  paymentTxHash?: string
 }
 
 // RSVP owned by attendee wallet. expiresIn matches the event so they die together.
@@ -26,6 +27,7 @@ export async function createRsvp(
   const payload: RsvpPayload = {
     message: input.message ?? '',
     createdAt: Math.floor(Date.now() / 1000),
+    ...(input.paymentTxHash ? { paymentTxHash: input.paymentTxHash } : {}),
   }
 
   const { entityKey, txHash } = await walletClient.createEntity({

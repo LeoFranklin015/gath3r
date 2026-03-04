@@ -10,10 +10,11 @@ export function useRsvp() {
   const rsvp = useCallback(async (
     eventEntityKey: string,
     message?: string,
+    paymentTxHash?: string,
   ) => {
     if (!address) throw new Error('No wallet connected')
     const client = await getClient()
-    return createRsvp(client, { eventEntityKey, attendeeWallet: address, message })
+    return createRsvp(client, { eventEntityKey, attendeeWallet: address, message, paymentTxHash })
   }, [getClient, address])
 
   const cancel = useCallback(async (
