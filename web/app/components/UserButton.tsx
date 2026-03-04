@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { usePrivy, useWallets } from "@privy-io/react-auth";
-import { Check, Copy, LogOut } from "lucide-react";
+import { Check, Copy, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlobAvatar } from "@/app/components/BlobAvatar";
 import { useProfile } from "@/app/hooks/useProfile";
@@ -10,6 +11,7 @@ import { useProfile } from "@/app/hooks/useProfile";
 export function UserButton() {
   const { logout, user } = usePrivy();
   const { wallets } = useWallets();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -83,7 +85,16 @@ export function UserButton() {
             </Button>
           )}
 
-          <div className="mt-3 border-t pt-3">
+          <div className="mt-3 flex flex-col gap-1 border-t pt-3">
+            <Button
+              variant="ghost"
+              role="menuitem"
+              onClick={() => { router.push("/profile"); setOpen(false); }}
+              className="w-full justify-start text-xs"
+            >
+              <User className="mr-2 h-3.5 w-3.5" />
+              View profile
+            </Button>
             <Button
               variant="ghost"
               role="menuitem"

@@ -54,6 +54,31 @@ export async function getProfileByWallet(
   }
 }
 
+export async function updateProfile(
+  walletClient: WalletClient,
+  entityKey: string,
+  address: `0x${string}`,
+  data: Pick<ProfilePayload, 'displayName' | 'bio' | 'avatar' | 'socialLinks'>,
+  prev: ProfilePayload,
+): Promise<string> {
+  const payload: ProfilePayload = {
+    ...prev,
+    ...data,
+  }
+
+  const { txHash } = await walletClient.updateEntity({
+    entityKey,
+    payload: jsonToPayload(payload),
+    contentType: 'application/json',
+    attributes: [
+      { key: 'type', value: ENTITY_TYPE.PROFILE },
+      { key: 'wallet', value: address },
+      { key: 'ensName', value: data.displayName },
+    ],
+  })
+  return txHash
+}
+
 export async function renewProfile(
   walletClient: WalletClient,
   entityKey: string,
