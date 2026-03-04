@@ -1,0 +1,6 @@
+/cloudflare
+/contracts/artifacts
+/contracts/node_modules
+/contracts/typechain-types
+contracts/cache/solidity-files-cache.json
+contracts/.env
