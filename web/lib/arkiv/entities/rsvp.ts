@@ -101,6 +101,23 @@ export async function listRsvpsForEvent(eventEntityKey: string): Promise<RsvpEnt
   return result.entities.map(entityToRsvp)
 }
 
+export async function listRsvpsForWallet(
+  attendeeWallet: `0x${string}`,
+): Promise<RsvpEntity[]> {
+  const result = await publicClient
+    .buildQuery()
+    .where([
+      eq('type', ENTITY_TYPE.RSVP),
+      eq('attendeeWallet', attendeeWallet),
+    ])
+    .withAttributes(true)
+    .withMetadata(true)
+    .withPayload(true)
+    .fetch()
+
+  return result.entities.map(entityToRsvp)
+}
+
 export async function getRsvpForAttendee(
   eventEntityKey: string,
   attendeeWallet: `0x${string}`,

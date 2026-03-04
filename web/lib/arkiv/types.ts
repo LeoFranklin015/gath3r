@@ -82,3 +82,8 @@ export interface ApprovalEntity extends ArkivEntity<ApprovalPayload> {
   attendeeWallet: `0x${string}`
   decision: ApprovalDecision
 }
+
+export interface CheckinEntity extends ArkivEntity<CheckinPayload> {
+  attendeeWallet: `0x${string}`
+  method: CheckinMethod
+}
