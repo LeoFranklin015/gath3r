@@ -28,6 +28,7 @@ export interface EventPayload {
   tags: string[]
   imageUrl: string
   ticketPrice: number    // ETH amount, 0 = free
+  city?: string          // populated from on-chain attribute when fetched
 }
 
 export interface RsvpPayload {

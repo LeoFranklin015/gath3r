@@ -7,6 +7,12 @@ import { AppHeader } from "@/app/components/AppHeader"
 import { useMyEvents } from "@/app/hooks/useMyEvents"
 import { useEvents } from "@/app/hooks/useEvents"
 import { EventCard } from "@/app/components/EventCard"
+import {
+  DiscoverFilters,
+  type TimeFilter,
+  type PriceFilter,
+  type AccessFilter,
+} from "@/app/components/DiscoverFilters"
 import { Plus, Compass, CalendarCheck } from "lucide-react"
 import type { EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 
@@ -68,11 +74,58 @@ function groupByDate(events: ArkivEntity<EventPayload>[]): DateGroup[] {
   return groups
 }
 
+function getTimeBounds(filter: TimeFilter): {
+  startTimeGte?: number
+  startTimeLte?: number
+} {
+  if (filter === "all") return {}
+  const now = new Date()
+  const startOfDay = new Date(now)
+  startOfDay.setHours(0, 0, 0, 0)
+
+  if (filter === "today") {
+    const endOfDay = new Date(startOfDay)
+    endOfDay.setDate(endOfDay.getDate() + 1)
+    return {
+      startTimeGte: Math.floor(startOfDay.getTime() / 1000),
+      startTimeLte: Math.floor(endOfDay.getTime() / 1000),
+    }
+  }
+  if (filter === "this-week") {
+    const endOfWeek = new Date(now)
+    endOfWeek.setDate(endOfWeek.getDate() + 7)
+    endOfWeek.setHours(23, 59, 59, 999)
+    return {
+      startTimeGte: Math.floor(now.getTime() / 1000),
+      startTimeLte: Math.floor(endOfWeek.getTime() / 1000),
+    }
+  }
+  // this-month
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+  return {
+    startTimeGte: Math.floor(now.getTime() / 1000),
+    startTimeLte: Math.floor(endOfMonth.getTime() / 1000),
+  }
+}
+
 export default function HomePage() {
   const { ready, authenticated } = usePrivy()
   const router = useRouter()
   const { going, pending, drafts, statusMap, loading: myLoading } = useMyEvents()
-  const { events: publicEvents, loading: discoverLoading } = useEvents()
+
+  // Filter state
+  const [cityFilter, setCityFilter] = useState<string | undefined>(undefined)
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all")
+  const [priceFilter, setPriceFilter] = useState<PriceFilter>("all")
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>("all")
+
+  const timeBounds = useMemo(() => getTimeBounds(timeFilter), [timeFilter])
+
+  const { events: publicEvents, loading: discoverLoading } = useEvents({
+    city: cityFilter,
+    ...timeBounds,
+  })
+
   const [tab, setTab] = useState<Tab>("discover")
 
   useEffect(() => {
@@ -85,12 +138,35 @@ export default function HomePage() {
     return merged.sort((a, b) => a.payload.startTime - b.payload.startTime)
   }, [going, pending, drafts])
 
-  const sortedDiscover = useMemo(
-    () => [...publicEvents].sort((a, b) => a.payload.startTime - b.payload.startTime),
-    [publicEvents],
-  )
+  // Derive available cities & tags from fetched events
+  const availableCities = useMemo(() => {
+    const cities = new Set<string>()
+    for (const e of publicEvents) {
+      if (e.payload.city) cities.add(e.payload.city)
+    }
+    return Array.from(cities).sort()
+  }, [publicEvents])
 
-  const activeEvents = tab === "discover" ? sortedDiscover : allMyEvents
+  // Client-side filtering (price, access) + sort
+  const filteredDiscover = useMemo(() => {
+    let filtered = publicEvents
+
+    if (priceFilter === "free") {
+      filtered = filtered.filter((e) => !e.payload.ticketPrice || e.payload.ticketPrice === 0)
+    } else if (priceFilter === "paid") {
+      filtered = filtered.filter((e) => e.payload.ticketPrice > 0)
+    }
+
+    if (accessFilter === "open") {
+      filtered = filtered.filter((e) => !e.payload.requiresApproval)
+    } else if (accessFilter === "invite-only") {
+      filtered = filtered.filter((e) => e.payload.requiresApproval)
+    }
+
+    return [...filtered].sort((a, b) => a.payload.startTime - b.payload.startTime)
+  }, [publicEvents, priceFilter, accessFilter])
+
+  const activeEvents = tab === "discover" ? filteredDiscover : allMyEvents
   const isLoading = tab === "discover" ? discoverLoading : myLoading
   type TabIcon = typeof Compass
   const tabConfig: { key: Tab; label: string; icon: TabIcon }[] = [
@@ -134,6 +210,21 @@ export default function HomePage() {
           )
         })}
       </div>
+
+      {/* Filters — Discover tab only */}
+      {tab === "discover" && (
+        <DiscoverFilters
+          availableCities={availableCities}
+          cityFilter={cityFilter}
+          timeFilter={timeFilter}
+          priceFilter={priceFilter}
+          accessFilter={accessFilter}
+          onCityChange={setCityFilter}
+          onTimeChange={setTimeFilter}
+          onPriceChange={setPriceFilter}
+          onAccessChange={setAccessFilter}
+        />
+      )}
 
       {/* Content */}
       <main className="flex-1 overflow-y-auto pb-24">

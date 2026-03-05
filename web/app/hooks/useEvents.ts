@@ -4,7 +4,14 @@ import { useState, useEffect, useCallback } from 'react'
 import { listPublishedEvents } from '@/lib/arkiv/entities/event'
 import type { EventPayload, ArkivEntity } from '@/lib/arkiv/types'
 
-export function useEvents(city?: string) {
+export interface UseEventsOptions {
+  city?: string
+  startTimeGte?: number
+  startTimeLte?: number
+}
+
+export function useEvents(options: UseEventsOptions = {}) {
+  const { city, startTimeGte, startTimeLte } = options
   const [events, setEvents] = useState<ArkivEntity<EventPayload>[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -13,13 +20,13 @@ export function useEvents(city?: string) {
     setLoading(true)
     setError(null)
     try {
-      setEvents(await listPublishedEvents({ city }))
+      setEvents(await listPublishedEvents({ city, startTimeGte, startTimeLte }))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load events')
     } finally {
       setLoading(false)
     }
-  }, [city])
+  }, [city, startTimeGte, startTimeLte])
 
   useEffect(() => { load() }, [load])
 

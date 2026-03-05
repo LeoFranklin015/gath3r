@@ -1,5 +1,5 @@
 import { jsonToPayload, NoEntityFoundError } from '@arkiv-network/sdk'
-import { eq } from '@arkiv-network/sdk/query'
+import { eq, gte, lte } from '@arkiv-network/sdk/query'
 import { publicClient } from '@/lib/arkiv/client'
 import { ENTITY_TYPE, EXPIRY_BUFFER_SECS, secondsUntil } from '@/lib/arkiv/constants'
 import type { EventPayload, ArkivEntity, WriteResult, EventStatus } from '@/lib/arkiv/types'
@@ -83,12 +83,16 @@ export async function publishEvent(
 export async function listPublishedEvents(options?: {
   city?: string
   hostWallet?: `0x${string}`
+  startTimeGte?: number
+  startTimeLte?: number
 }): Promise<ArkivEntity<EventPayload>[]> {
   const predicates = [
     eq('type', ENTITY_TYPE.EVENT),
     eq('status', 'published'),
     ...(options?.city ? [eq('city', options.city)] : []),
     ...(options?.hostWallet ? [eq('hostWallet', options.hostWallet)] : []),
+    ...(options?.startTimeGte !== undefined ? [gte('startTime', String(options.startTimeGte))] : []),
+    ...(options?.startTimeLte !== undefined ? [lte('startTime', String(options.startTimeLte))] : []),
   ]
 
   const result = await publicClient
@@ -103,7 +107,10 @@ export async function listPublishedEvents(options?: {
   return result.entities.map((e: any) => ({
     entityKey: e.key,
     owner: (e.owner || e.attributes?.find((a: any) => a.key === 'hostWallet')?.value || '') as `0x${string}`,
-    payload: e.toJson() as EventPayload,
+    payload: {
+      ...(e.toJson() as EventPayload),
+      city: e.attributes?.find((a: any) => a.key === 'city')?.value ?? '',
+    },
   }))
 }
 
