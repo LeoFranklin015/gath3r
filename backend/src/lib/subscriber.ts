@@ -7,6 +7,7 @@ import { logEntityEvent, logError, logInfo } from './logger.js'
 import { sendApprovalEmail } from './approval-email.js'
 import { sendRsvpEmail } from './rsvp-email.js'
 import { sendCheckinEmail } from './checkin-email.js'
+import { sendWelcomeEth } from './faucet.js'
 import type { EventAction } from '../types.js'
 
 async function handleApprovalNotification(entity: any, details: Record<string, unknown>): Promise<void> {
@@ -109,6 +110,13 @@ async function handleEntityEvent(entityKey: Hex, owner: Hex, action: EventAction
         await handleRsvpNotification(parsed.details)
       } else if (parsed.entityType === 'checkin') {
         await handleCheckinNotification(parsed.details)
+      } else if (parsed.entityType === 'profile') {
+        const wallet = parsed.details.wallet as string | undefined
+        if (wallet) {
+          sendWelcomeEth(wallet as `0x${string}`).catch((err) =>
+            logError('profile-faucet-async', err),
+          )
+        }
       }
     }
   } catch (error) {

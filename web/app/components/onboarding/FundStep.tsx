@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { ExternalLink, RefreshCw, Wallet, Check, Copy } from "lucide-react"
 
 const FAUCET_URL = "https://kaolin.hoodi.arkiv.network/faucet/"
-const MIN_BALANCE = BigInt("3000000000000000") // 0.003 ETH in wei
+const MIN_BALANCE = BigInt("1000000000000000") // 0.003 ETH in wei
 
 const viemClient = createPublicClient({
   chain: kaolin,
@@ -82,7 +82,7 @@ export function FundStep({ address, onNext }: FundStepProps) {
         </p>
         {!funded && balance !== null && (
           <p className="mt-1 text-xs text-amber-600">
-            Minimum 0.003 ETH required
+            Minimum 0.001 ETH required
           </p>
         )}
         {funded && (

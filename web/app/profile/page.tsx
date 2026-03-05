@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { usePrivy, useWallets } from "@privy-io/react-auth"
-import { Pencil, Globe, Check, Copy, Loader2, Calendar, Trash2, AlertTriangle } from "lucide-react"
+import { Pencil, Globe, Check, Copy, Loader2, Calendar, Trash2, AlertTriangle, RefreshCw, Wallet } from "lucide-react"
 import { AppHeader } from "@/app/components/AppHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,7 @@ import { BlobAvatar } from "@/app/components/BlobAvatar"
 import { EventCard } from "@/app/components/EventCard"
 import { useProfile } from "@/app/hooks/useProfile"
 import { useMyEvents } from "@/app/hooks/useMyEvents"
+import { useWalletBalances } from "@/app/hooks/useWalletBalances"
 import type { SocialPlatform, SocialLink, EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 
 const BIO_MAX_LENGTH = 160
@@ -39,6 +40,8 @@ export default function ProfilePage() {
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy")
   const address = embeddedWallet?.address ?? ""
+
+  const { arkivBalance, arbBalance, loading: balancesLoading, refresh: refreshBalances } = useWalletBalances(address)
 
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -198,6 +201,9 @@ export default function ProfilePage() {
               {profile.payload.displayName}
             </h1>
             {address && <CopyAddress address={address} />}
+            {user?.email?.address && (
+              <p className="mt-1 text-[12px] text-muted-foreground">{user.email.address}</p>
+            )}
           </div>
         )}
 
@@ -262,6 +268,44 @@ export default function ProfilePage() {
 
         {/* Divider */}
         <div className="mt-6 h-px bg-border" />
+
+        {/* Wallet balances */}
+        {!editing && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground/60">
+                  Balances
+                </span>
+              </div>
+              <button
+                onClick={refreshBalances}
+                disabled={balancesLoading}
+                className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <RefreshCw className={`h-3 w-3 ${balancesLoading ? "animate-spin" : ""}`} />
+                Refresh
+              </button>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                <span className="text-[11px] font-medium text-muted-foreground/60">Arkiv (Kaolin)</span>
+                <p className="mt-1 text-base font-semibold tabular-nums text-foreground">
+                  {arkivBalance !== null ? Number(arkivBalance).toFixed(4) : "..."}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">ETH</span>
+                </p>
+              </div>
+              <div className="rounded-2xl border border-border bg-card px-4 py-3">
+                <span className="text-[11px] font-medium text-muted-foreground/60">Arb Sepolia</span>
+                <p className="mt-1 text-base font-semibold tabular-nums text-foreground">
+                  {arbBalance !== null ? Number(arbBalance).toFixed(4) : "..."}
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">ETH</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Bio */}
         {editing ? (
