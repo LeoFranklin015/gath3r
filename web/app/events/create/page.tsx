@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { usePrivy } from "@privy-io/react-auth"
-import { ArrowLeft, Tag, Building2, Loader2, AlignLeft } from "lucide-react"
+import { Tag, Building2, Loader2, AlignLeft } from "lucide-react"
+import { AppHeader } from "@/app/components/AppHeader"
 import { Button } from "@/components/ui/button"
 import { EventImageUpload } from "@/app/components/create-event/EventImageUpload"
 import { DateTimeSection } from "@/app/components/create-event/DateTimeSection"
@@ -145,16 +146,7 @@ export default function CreateEventPage() {
         }}
       />
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center gap-3 px-5 pt-6 pb-3">
-        <button
-          onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-        >
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </button>
-        <h1 className="text-[15px] font-semibold text-foreground">New Event</h1>
-      </header>
+      <AppHeader backHref="/home" />
 
       {/* Scrollable form */}
       <div className="relative z-10 flex flex-1 flex-col px-5 pt-2 pb-10">

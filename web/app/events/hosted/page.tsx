@@ -3,7 +3,8 @@
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { usePrivy } from "@privy-io/react-auth"
-import { ArrowLeft, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
+import { AppHeader } from "@/app/components/AppHeader"
 import { EventCard } from "@/app/components/EventCard"
 import { useHostedEvents } from "@/app/hooks/useHostedEvents"
 
@@ -35,16 +36,7 @@ export default function HostedEventsPage() {
         }}
       />
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center gap-3 px-5 pt-6 pb-3">
-        <button
-          onClick={() => router.back()}
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-        >
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </button>
-        <h1 className="text-[15px] font-semibold text-foreground">My Events</h1>
-      </header>
+      <AppHeader backHref="/home" />
 
       {/* Content */}
       <div className="relative z-10 flex flex-1 flex-col px-5 pt-2 pb-10">

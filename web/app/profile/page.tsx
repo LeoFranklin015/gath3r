@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { usePrivy, useWallets } from "@privy-io/react-auth"
-import { ArrowLeft, Pencil, Globe, Check, Copy, Loader2, Calendar } from "lucide-react"
+import { Pencil, Globe, Check, Copy, Loader2, Calendar } from "lucide-react"
+import { AppHeader } from "@/app/components/AppHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -150,30 +151,7 @@ export default function ProfilePage() {
         }}
       />
 
-      {/* Top bar */}
-      <div className="relative z-10 flex items-center justify-between px-5 pt-6 pb-2">
-        <button
-          onClick={() => router.back()}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-        >
-          <ArrowLeft className="h-[18px] w-[18px] text-foreground" />
-        </button>
-        {editing ? (
-          <button
-            onClick={cancelEditing}
-            className="rounded-full bg-background/60 px-4 py-2 text-sm font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:bg-background/80"
-          >
-            Cancel
-          </button>
-        ) : (
-          <button
-            onClick={() => setEditing(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-          >
-            <Pencil className="h-4 w-4 text-foreground" />
-          </button>
-        )}
-      </div>
+      <AppHeader backHref="/home" />
 
       {/* Profile content */}
       <div className="relative z-10 flex flex-col px-7 pb-10">

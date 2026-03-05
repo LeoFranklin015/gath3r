@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { usePrivy } from "@privy-io/react-auth"
-import { UserButton } from "@/app/components/UserButton"
+import { AppHeader } from "@/app/components/AppHeader"
 import { useMyEvents } from "@/app/hooks/useMyEvents"
 import { useEvents } from "@/app/hooks/useEvents"
 import { EventCard } from "@/app/components/EventCard"
@@ -109,11 +109,7 @@ export default function HomePage() {
 
   return (
     <div className="flex min-h-dvh flex-col bg-background">
-      {/* Top bar */}
-      <header className="flex items-center justify-between px-5 pt-10 pb-2">
-        <span className="text-lg font-bold text-foreground">Gath3r</span>
-        <UserButton />
-      </header>
+      <AppHeader />
 
       {/* Tabs — full-width with underline */}
       <div className="flex border-b border-border/60">
@@ -167,7 +163,7 @@ export default function HomePage() {
                     <div key={event.entityKey}>
                       <EventCard
                         event={event}
-                        status={tab === "attending" ? statusMap.get(event.entityKey) : undefined}
+                        status={statusMap.get(event.entityKey)}
                         onClick={() =>
                           router.push(`/events/${event.entityKey}`)
                         }

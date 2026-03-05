@@ -25,6 +25,7 @@ import { useRsvp } from "@/app/hooks/useRsvp"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { useWallets } from "@privy-io/react-auth"
 import { arbitrumSepolia } from "@/lib/chains"
+import { AppHeader } from "@/app/components/AppHeader"
 import { createApproval } from "@/lib/arkiv/entities/approval"
 import { publishEvent } from "@/lib/arkiv/entities/event"
 import { CheckinQRCode } from "@/app/components/event-detail/CheckinQRCode"
@@ -211,23 +212,17 @@ export default function EventDetailPage() {
         }}
       />
 
+      <AppHeader backHref="/home" />
+
       {/* Hero image or gradient placeholder */}
       <div className="relative z-10">
         {p.imageUrl ? (
-          <div className="relative mx-5 mt-6 aspect-video overflow-hidden rounded-2xl shadow-lg shadow-black/10">
+          <div className="relative mx-5 aspect-video overflow-hidden rounded-2xl shadow-lg shadow-black/10">
             <Image src={p.imageUrl} alt={p.title} fill className="object-cover" unoptimized />
           </div>
         ) : (
-          <div className="mx-5 mt-6 aspect-video rounded-2xl" />
+          <div className="mx-5 aspect-video rounded-2xl" />
         )}
-
-        {/* Back button */}
-        <button
-          onClick={() => router.back()}
-          className="absolute left-7 top-8 flex h-9 w-9 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-        >
-          <ArrowLeft className="h-4 w-4 text-foreground" />
-        </button>
       </div>
 
       {/* Content */}

@@ -5,14 +5,13 @@ import { useParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { usePrivy } from "@privy-io/react-auth"
 import {
-  ArrowLeft,
   Calendar,
   MapPin,
   Video,
   Users,
-  Pencil,
   Loader2,
 } from "lucide-react"
+import { AppHeader } from "@/app/components/AppHeader"
 import { useEventDetail } from "@/app/hooks/useEventDetail"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createApproval } from "@/lib/arkiv/entities/approval"
@@ -175,24 +174,7 @@ export default function HostDashboardPage() {
         }}
       />
 
-      {/* Header */}
-      <header className="relative z-10 flex items-center justify-between px-5 pt-6 pb-3">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => router.push("/events/hosted")}
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-          >
-            <ArrowLeft className="h-4 w-4 text-foreground" />
-          </button>
-          <h1 className="text-[15px] font-semibold text-foreground">Manage Event</h1>
-        </div>
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-background/60 backdrop-blur-sm transition-colors hover:bg-background/80"
-          title="Edit event"
-        >
-          <Pencil className="h-4 w-4 text-foreground" />
-        </button>
-      </header>
+      <AppHeader backHref="/events/hosted" />
 
       {/* Event summary card */}
       <div className="relative z-10 mx-5 overflow-hidden rounded-2xl border border-border bg-card">

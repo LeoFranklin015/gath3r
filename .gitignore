@@ -4,3 +4,4 @@
 /contracts/typechain-types
 contracts/cache/solidity-files-cache.json
 contracts/.env
+.claude/
