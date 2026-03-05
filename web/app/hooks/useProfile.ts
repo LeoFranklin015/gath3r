@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useArkivWallet } from './useArkivWallet'
-import { createProfile, updateProfile, getProfileByWallet } from '@/lib/arkiv/entities/profile'
+import { createProfile, updateProfile, deleteProfile, getProfileByWallet } from '@/lib/arkiv/entities/profile'
 import type { ProfilePayload, ArkivEntity } from '@/lib/arkiv/types'
 
 export function useProfile(walletAddress?: `0x${string}`) {
@@ -48,5 +48,13 @@ export function useProfile(walletAddress?: `0x${string}`) {
     return txHash
   }, [getClient, ownAddress, profile, load])
 
-  return { profile, loading, error, create, update, reload: load }
+  const remove = useCallback(async () => {
+    if (!profile) throw new Error('No profile to delete')
+    const client = await getClient()
+    const txHash = await deleteProfile(client, profile.entityKey)
+    setProfile(null)
+    return txHash
+  }, [getClient, profile])
+
+  return { profile, loading, error, create, update, remove, reload: load }
 }

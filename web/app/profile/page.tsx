@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { usePrivy, useWallets } from "@privy-io/react-auth"
-import { Pencil, Globe, Check, Copy, Loader2, Calendar } from "lucide-react"
+import { Pencil, Globe, Check, Copy, Loader2, Calendar, Trash2, AlertTriangle } from "lucide-react"
 import { AppHeader } from "@/app/components/AppHeader"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -34,7 +34,7 @@ export default function ProfilePage() {
   const { ready, authenticated, user } = usePrivy()
   const { wallets } = useWallets()
   const router = useRouter()
-  const { profile, loading, update, reload } = useProfile()
+  const { profile, loading, update, remove, reload } = useProfile()
   const { going, pending, statusMap, loading: eventsLoading } = useMyEvents()
 
   const embeddedWallet = wallets.find((w) => w.walletClientType === "privy")
@@ -43,6 +43,8 @@ export default function ProfilePage() {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const [displayName, setDisplayName] = useState("")
   const [bio, setBio] = useState("")
@@ -107,6 +109,18 @@ export default function ProfilePage() {
       console.error("Avatar upload failed:", e)
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      await remove()
+      router.replace("/onboarding")
+    } catch (e) {
+      console.error("Failed to delete profile:", e)
+      setDeleting(false)
+      setShowDeleteModal(false)
     }
   }
 
@@ -226,6 +240,26 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Edit / Delete buttons */}
+        {!editing && (
+          <div className="mt-5 flex items-center gap-2">
+            <button
+              onClick={() => setEditing(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-border px-3.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-muted/60 active:bg-muted"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+              Edit profile
+            </button>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="inline-flex items-center gap-1.5 rounded-full border border-destructive/30 px-3.5 py-1.5 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/15"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete
+            </button>
+          </div>
+        )}
+
         {/* Divider */}
         <div className="mt-6 h-px bg-border" />
 
@@ -311,6 +345,52 @@ export default function ProfilePage() {
           statusMap={statusMap}
           loading={eventsLoading}
         />
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/40"
+            onClick={() => !deleting && setShowDeleteModal(false)}
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-4 mb-8 rounded-2xl border border-border bg-background p-5 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-foreground">Delete profile?</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This will permanently remove your profile from the chain. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+              >
+                {deleting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </span>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </>
       )}
     </div>
   )
