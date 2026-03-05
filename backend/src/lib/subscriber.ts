@@ -4,7 +4,34 @@ import { publicClient } from './client.js'
 import { parseEntity } from './entity-parser.js'
 import { addLogEntry } from './log-store.js'
 import { logEntityEvent, logError, logInfo } from './logger.js'
+import { sendApprovalEmail } from './approval-email.js'
 import type { EventAction } from '../types.js'
+
+async function handleApprovalNotification(entity: any, details: Record<string, unknown>): Promise<void> {
+  const decision = details.decision as string | undefined
+  const attendeeWallet = details.attendeeWallet as string | undefined
+  const eventId = details.eventId as string | undefined
+
+  if (decision !== 'approved' || !attendeeWallet || !eventId) return
+
+  try {
+    // Fetch the event entity to get the event title
+    const eventEntity = await publicClient.getEntity(eventId as Hex)
+    let eventTitle = '(untitled event)'
+    try {
+      const eventPayload = eventEntity.toJson() as Record<string, unknown>
+      eventTitle = (eventPayload.title as string) || eventTitle
+    } catch {
+      // payload might not be JSON
+    }
+
+    sendApprovalEmail(attendeeWallet, eventTitle).catch((err) =>
+      logError('approval-email-async', err),
+    )
+  } catch (error) {
+    logError('approval-notification', error)
+  }
+}
 
 async function handleEntityEvent(entityKey: Hex, owner: Hex, action: EventAction): Promise<void> {
   try {
@@ -21,6 +48,11 @@ async function handleEntityEvent(entityKey: Hex, owner: Hex, action: EventAction
       summary: parsed.summary,
       details: parsed.details,
     })
+
+    // Send approval notification email when an approval entity is created
+    if (action === 'created' && parsed.entityType === 'approval') {
+      await handleApprovalNotification(entity, parsed.details)
+    }
   } catch (error) {
     if (error instanceof NoEntityFoundError) {
       const summary = `Entity ${short(entityKey)} by ${short(owner)} (${action} — no longer exists)`
