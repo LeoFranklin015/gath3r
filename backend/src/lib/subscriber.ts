@@ -5,6 +5,8 @@ import { parseEntity } from './entity-parser.js'
 import { addLogEntry } from './log-store.js'
 import { logEntityEvent, logError, logInfo } from './logger.js'
 import { sendApprovalEmail } from './approval-email.js'
+import { sendRsvpEmail } from './rsvp-email.js'
+import { sendCheckinEmail } from './checkin-email.js'
 import type { EventAction } from '../types.js'
 
 async function handleApprovalNotification(entity: any, details: Record<string, unknown>): Promise<void> {
@@ -33,6 +35,56 @@ async function handleApprovalNotification(entity: any, details: Record<string, u
   }
 }
 
+async function handleRsvpNotification(details: Record<string, unknown>): Promise<void> {
+  const attendeeWallet = details.attendeeWallet as string | undefined
+  const eventId = details.eventId as string | undefined
+  const status = details.status as string | undefined
+
+  if (!attendeeWallet || !eventId || !status) return
+
+  try {
+    const eventEntity = await publicClient.getEntity(eventId as Hex)
+    let eventTitle = '(untitled event)'
+    try {
+      const eventPayload = eventEntity.toJson() as Record<string, unknown>
+      eventTitle = (eventPayload.title as string) || eventTitle
+    } catch {
+      // payload might not be JSON
+    }
+
+    sendRsvpEmail(attendeeWallet, eventTitle, status).catch((err) =>
+      logError('rsvp-email-async', err),
+    )
+  } catch (error) {
+    logError('rsvp-notification', error)
+  }
+}
+
+async function handleCheckinNotification(details: Record<string, unknown>): Promise<void> {
+  const attendeeWallet = details.attendeeWallet as string | undefined
+  const eventId = details.eventId as string | undefined
+  const method = (details.method as string) || 'unknown'
+
+  if (!attendeeWallet || !eventId) return
+
+  try {
+    const eventEntity = await publicClient.getEntity(eventId as Hex)
+    let eventTitle = '(untitled event)'
+    try {
+      const eventPayload = eventEntity.toJson() as Record<string, unknown>
+      eventTitle = (eventPayload.title as string) || eventTitle
+    } catch {
+      // payload might not be JSON
+    }
+
+    sendCheckinEmail(attendeeWallet, eventTitle, method).catch((err) =>
+      logError('checkin-email-async', err),
+    )
+  } catch (error) {
+    logError('checkin-notification', error)
+  }
+}
+
 async function handleEntityEvent(entityKey: Hex, owner: Hex, action: EventAction): Promise<void> {
   try {
     const entity = await publicClient.getEntity(entityKey)
@@ -49,9 +101,15 @@ async function handleEntityEvent(entityKey: Hex, owner: Hex, action: EventAction
       details: parsed.details,
     })
 
-    // Send approval notification email when an approval entity is created
-    if (action === 'created' && parsed.entityType === 'approval') {
-      await handleApprovalNotification(entity, parsed.details)
+    // Send notification emails when entities are created
+    if (action === 'created') {
+      if (parsed.entityType === 'approval') {
+        await handleApprovalNotification(entity, parsed.details)
+      } else if (parsed.entityType === 'rsvp') {
+        await handleRsvpNotification(parsed.details)
+      } else if (parsed.entityType === 'checkin') {
+        await handleCheckinNotification(parsed.details)
+      }
     }
   } catch (error) {
     if (error instanceof NoEntityFoundError) {
