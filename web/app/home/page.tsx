@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { usePrivy } from "@privy-io/react-auth"
+import { usePrivy, useWallets } from "@privy-io/react-auth"
 import { AppHeader } from "@/app/components/AppHeader"
 import { useMyEvents } from "@/app/hooks/useMyEvents"
 import { useEvents } from "@/app/hooks/useEvents"
@@ -13,6 +13,7 @@ import {
   type PriceFilter,
   type AccessFilter,
 } from "@/app/components/DiscoverFilters"
+import { usePushNotifications } from "@/app/hooks/usePushNotifications"
 import { Plus, Compass, CalendarCheck } from "lucide-react"
 import type { EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 
@@ -110,8 +111,11 @@ function getTimeBounds(filter: TimeFilter): {
 
 export default function HomePage() {
   const { ready, authenticated } = usePrivy()
+  const { wallets } = useWallets()
   const router = useRouter()
   const { going, pending, drafts, statusMap, loading: myLoading } = useMyEvents()
+  const embeddedWallet = wallets.find((w) => w.walletClientType === "privy")
+  usePushNotifications(embeddedWallet?.address ?? "")
 
   // Filter state
   const [cityFilter, setCityFilter] = useState<string | undefined>(undefined)

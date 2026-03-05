@@ -5,7 +5,7 @@ import { X, Send, Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { EventPayload } from "@/lib/arkiv/types"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/backend"
 
 function formatDate(start: number, end: number) {
   const s = new Date(start * 1000)

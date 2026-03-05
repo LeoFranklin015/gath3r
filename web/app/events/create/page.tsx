@@ -14,7 +14,7 @@ import { InviteModal } from "@/app/components/create-event/InviteModal"
 import { useCreateEvent } from "@/app/hooks/useCreateEvent"
 import type { EventPayload } from "@/lib/arkiv/types"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/backend"
 
 function toDatetimeLocal(d: Date) {
   const pad = (n: number) => String(n).padStart(2, "0")

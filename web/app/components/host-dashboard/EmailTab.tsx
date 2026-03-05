@@ -5,7 +5,7 @@ import { Send, Loader2, Check, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { RsvpEntity, CheckinEntity } from "@/lib/arkiv/types"
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:3001"
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/backend"
 
 function short(addr: string) {
   return `${addr.slice(0, 6)}…${addr.slice(-4)}`

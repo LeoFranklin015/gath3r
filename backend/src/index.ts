@@ -5,6 +5,7 @@ import { logsRouter } from './routes/logs.js'
 import { emailRouter } from './routes/email.js'
 import { poapRouter } from './routes/poap.js'
 import { calendarRouter } from './routes/calendar.js'
+import { pushRouter } from './routes/push.js'
 import { startSubscription } from './lib/subscriber.js'
 import { logInfo, logError } from './lib/logger.js'
 
@@ -26,6 +27,7 @@ app.use(logsRouter)
 app.use(emailRouter)
 app.use(poapRouter)
 app.use(calendarRouter)
+app.use(pushRouter)
 
 let unsubscribe: (() => void) | null = null
 

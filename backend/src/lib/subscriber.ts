@@ -8,6 +8,7 @@ import { sendApprovalEmail } from './approval-email.js'
 import { sendRsvpEmail } from './rsvp-email.js'
 import { sendCheckinEmail } from './checkin-email.js'
 import { sendWelcomeEth } from './faucet.js'
+import { sendPushToWallet } from './push.js'
 import type { EventAction } from '../types.js'
 
 async function handleApprovalNotification(entity: any, details: Record<string, unknown>): Promise<void> {
@@ -31,6 +32,11 @@ async function handleApprovalNotification(entity: any, details: Record<string, u
     sendApprovalEmail(attendeeWallet, eventTitle).catch((err) =>
       logError('approval-email-async', err),
     )
+    sendPushToWallet(attendeeWallet, {
+      title: "You're approved!",
+      body: `Your registration for "${eventTitle}" has been approved.`,
+      url: `/events/${eventId}`,
+    }).catch((err) => logError('approval-push-async', err))
   } catch (error) {
     logError('approval-notification', error)
   }
@@ -81,6 +87,11 @@ async function handleCheckinNotification(details: Record<string, unknown>): Prom
     sendCheckinEmail(attendeeWallet, eventTitle, method).catch((err) =>
       logError('checkin-email-async', err),
     )
+    sendPushToWallet(attendeeWallet, {
+      title: "You're checked in!",
+      body: `You've been checked in to "${eventTitle}".`,
+      url: `/events/${eventId}`,
+    }).catch((err) => logError('checkin-push-async', err))
   } catch (error) {
     logError('checkin-notification', error)
   }

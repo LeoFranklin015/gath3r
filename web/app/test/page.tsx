@@ -15,7 +15,7 @@ import { createApproval, listApprovalsForEvent, getApprovalForAttendee } from '@
 import type { EventPayload, ArkivEntity, RsvpEntity, ApprovalEntity, CheckinPayload } from '@/lib/arkiv/types'
 import { CreateEventModal, type EventFormData } from '@/app/components/CreateEventModal'
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3001'
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '/api/backend'
 
 // ── Live state for selected event ────────────────────────────────────────────
 interface LiveState {
