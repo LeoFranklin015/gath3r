@@ -376,7 +376,7 @@ function MyEventsList({
 }: {
   going: ArkivEntity<EventPayload>[]
   pending: ArkivEntity<EventPayload>[]
-  statusMap: Map<string, "going" | "pending">
+  statusMap: Map<string, "going" | "pending" | "draft">
   loading: boolean
 }) {
   const router = useRouter()

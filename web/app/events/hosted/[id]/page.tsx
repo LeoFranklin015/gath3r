@@ -11,10 +11,13 @@ import {
   Video,
   Users,
   Pencil,
+  Loader2,
 } from "lucide-react"
 import { useEventDetail } from "@/app/hooks/useEventDetail"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createApproval } from "@/lib/arkiv/entities/approval"
+import { publishEvent } from "@/lib/arkiv/entities/event"
+import { Button } from "@/components/ui/button"
 import { RegistrationsTab } from "@/app/components/host-dashboard/RegistrationsTab"
 import { CheckinTab } from "@/app/components/host-dashboard/CheckinTab"
 import { EmailTab } from "@/app/components/host-dashboard/EmailTab"
@@ -56,8 +59,10 @@ export default function HostDashboardPage() {
   const [batchProgress, setBatchProgress] = useState<{ current: number; total: number } | null>(null)
 
   const isHost = !!event && !!address && event.owner.toLowerCase() === address.toLowerCase()
+  const isDraft = event?.status === "draft"
   const activeRsvps = rsvps.filter((r) => r.status !== "cancelled")
   const needsApproval = !!event?.payload.requiresApproval
+  const [publishing, setPublishing] = useState(false)
 
   useEffect(() => {
     if (ready && !authenticated) router.replace("/")
@@ -91,6 +96,27 @@ export default function HostDashboardPage() {
     },
     [getClient, address, id, reload],
   )
+
+  const handlePublish = useCallback(async () => {
+    if (!event || !address) return
+    setPublishing(true)
+    try {
+      const client = await getClient()
+      await publishEvent(
+        client,
+        id,
+        event.payload,
+        event.payload.location,
+        event.payload.startTime,
+        address,
+      )
+      await reload()
+    } catch (e) {
+      console.error("Publish failed:", e)
+    } finally {
+      setPublishing(false)
+    }
+  }, [event, address, getClient, id, reload])
 
   const handleBatchApprove = useCallback(
     async (wallets: `0x${string}`[], decision: "approved" | "rejected") => {
@@ -196,6 +222,28 @@ export default function HostDashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Draft banner + publish */}
+      {isDraft && (
+        <div className="relative z-10 mx-5 mt-4 flex items-center justify-between rounded-2xl border border-zinc-300 bg-zinc-50 px-4 py-3">
+          <div>
+            <p className="text-sm font-semibold text-zinc-800">Draft</p>
+            <p className="text-xs text-zinc-500">Not visible to attendees yet</p>
+          </div>
+          <Button
+            onClick={handlePublish}
+            disabled={publishing}
+            size="sm"
+            className="rounded-xl"
+          >
+            {publishing ? (
+              <><Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> Publishing...</>
+            ) : (
+              "Publish"
+            )}
+          </Button>
+        </div>
+      )}
 
       {/* Tab bar */}
       <div className="relative z-10 mt-4 flex border-b border-border/60">

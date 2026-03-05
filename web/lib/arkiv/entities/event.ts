@@ -138,15 +138,42 @@ export async function listHostEvents(
   return [...published, ...unlisted]
 }
 
+export async function listDraftEvents(
+  hostWallet: `0x${string}`,
+): Promise<ArkivEntity<EventPayload>[]> {
+  const result = await publicClient
+    .buildQuery()
+    .where([
+      eq('type', ENTITY_TYPE.EVENT),
+      eq('status', 'draft'),
+      eq('hostWallet', hostWallet),
+    ])
+    .withAttributes(true)
+    .withMetadata(true)
+    .withPayload(true)
+    .fetch()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return result.entities.map((e: any) => ({
+    entityKey: e.key,
+    owner: (e.owner || e.attributes?.find((a: any) => a.key === 'hostWallet')?.value || '') as `0x${string}`,
+    payload: e.toJson() as EventPayload,
+    status: 'draft' as EventStatus,
+  }))
+}
+
 export async function getEvent(
   entityKey: string,
 ): Promise<ArkivEntity<EventPayload> | null> {
   try {
-    const entity = await publicClient.getEntity(entityKey as `0x${string}`)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const entity: any = await publicClient.getEntity(entityKey as `0x${string}`)
+    const statusAttr = entity.attributes?.find((a: any) => a.key === 'status')?.value
     return {
       entityKey: entity.key,
       owner: (entity.owner ?? '') as `0x${string}`,
       payload: entity.toJson() as EventPayload,
+      ...(statusAttr ? { status: statusAttr as EventStatus } : {}),
     }
   } catch (e) {
     if (e instanceof NoEntityFoundError) return null

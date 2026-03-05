@@ -59,6 +59,7 @@ export interface ArkivEntity<T> {
   owner: `0x${string}`
   payload: T
   expiresAt?: number
+  status?: string
 }
 
 // Result of a write operation

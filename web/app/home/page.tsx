@@ -22,7 +22,11 @@ function getDateLabel(timestamp: number): {
   secondary: string
   key: string
 } {
-  const date = new Date(timestamp * 1000)
+  const ts = timestamp && isFinite(timestamp) ? timestamp : Math.floor(Date.now() / 1000)
+  const date = new Date(ts * 1000)
+  if (isNaN(date.getTime())) {
+    return { primary: "Unknown", secondary: "", key: "unknown" }
+  }
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const tomorrow = new Date(today)
@@ -67,7 +71,7 @@ function groupByDate(events: ArkivEntity<EventPayload>[]): DateGroup[] {
 export default function HomePage() {
   const { ready, authenticated } = usePrivy()
   const router = useRouter()
-  const { going, pending, statusMap, loading: myLoading } = useMyEvents()
+  const { going, pending, drafts, statusMap, loading: myLoading } = useMyEvents()
   const { events: publicEvents, loading: discoverLoading } = useEvents()
   const [tab, setTab] = useState<Tab>("discover")
 
@@ -75,11 +79,11 @@ export default function HomePage() {
     if (ready && !authenticated) router.replace("/")
   }, [ready, authenticated, router])
 
-  // Merge going + pending, sorted by startTime (going first within same time)
+  // Merge going + pending + drafts, sorted by startTime
   const allMyEvents = useMemo(() => {
-    const merged = [...going, ...pending]
+    const merged = [...going, ...pending, ...drafts]
     return merged.sort((a, b) => a.payload.startTime - b.payload.startTime)
-  }, [going, pending])
+  }, [going, pending, drafts])
 
   const sortedDiscover = useMemo(
     () => [...publicEvents].sort((a, b) => a.payload.startTime - b.payload.startTime),

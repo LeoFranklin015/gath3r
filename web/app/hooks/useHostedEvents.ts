@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useArkivWallet } from './useArkivWallet'
-import { listHostEvents } from '@/lib/arkiv/entities/event'
+import { listHostEvents, listDraftEvents } from '@/lib/arkiv/entities/event'
 import type { EventPayload, ArkivEntity } from '@/lib/arkiv/types'
 
 export function useHostedEvents() {
@@ -19,7 +19,11 @@ export function useHostedEvents() {
     }
     setError(null)
     try {
-      setEvents(await listHostEvents(address))
+      const [hosted, drafts] = await Promise.all([
+        listHostEvents(address),
+        listDraftEvents(address),
+      ])
+      setEvents([...drafts, ...hosted])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load events')
     } finally {

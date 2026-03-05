@@ -75,6 +75,7 @@ export default function HostedEventsPage() {
               <EventCard
                 key={event.entityKey}
                 event={event}
+                status={event.status === "draft" ? "draft" : undefined}
                 onClick={() => router.push(`/events/hosted/${event.entityKey}`)}
               />
             ))}

@@ -17,6 +17,7 @@ import {
   Ticket,
   QrCode,
   ScanLine,
+  ShieldCheck,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useEventDetail } from "@/app/hooks/useEventDetail"
@@ -25,6 +26,7 @@ import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { useWallets } from "@privy-io/react-auth"
 import { arbitrumSepolia } from "@/lib/chains"
 import { createApproval } from "@/lib/arkiv/entities/approval"
+import { publishEvent } from "@/lib/arkiv/entities/event"
 import { CheckinQRCode } from "@/app/components/event-detail/CheckinQRCode"
 import { QRScanner } from "@/app/components/event-detail/QRScanner"
 import type { RsvpEntity, CheckinEntity } from "@/lib/arkiv/types"
@@ -77,8 +79,9 @@ export default function EventDetailPage() {
   // Derived state
   const isHost =
     !!event && !!address && event.owner.toLowerCase() === address.toLowerCase()
+  const isDraft = isHost && event?.status === "draft"
   const hasActiveRsvp = !!myRsvp && myRsvp.status !== "cancelled"
-  const canRsvp = !isHost && !hasActiveRsvp
+  const canRsvp = !isHost && !hasActiveRsvp && !isDraft
   const needsApproval = !!event?.payload.requiresApproval
   const canCheckin =
     hasActiveRsvp &&
@@ -153,6 +156,27 @@ export default function EventDetailPage() {
     [getClient, address, id, reload],
   )
 
+  const handlePublish = useCallback(async () => {
+    if (!event || !address) return
+    setActionLoading("publish")
+    try {
+      const client = await getClient()
+      await publishEvent(
+        client,
+        id,
+        event.payload,
+        event.payload.location,
+        event.payload.startTime,
+        address,
+      )
+      await reload()
+    } catch (e) {
+      console.error("Publish failed:", e)
+    } finally {
+      setActionLoading(null)
+    }
+  }, [event, address, getClient, id, reload])
+
   if (loading && !event) {
     return (
       <div className="flex h-dvh items-center justify-center bg-background">
@@ -207,7 +231,7 @@ export default function EventDetailPage() {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex flex-1 flex-col px-6 pt-5 pb-10">
+      <div className="relative z-10 flex flex-1 flex-col px-6 pt-5 pb-28">
         {/* Title + Price */}
         <div className="flex items-start gap-3">
           <h1 className="flex-1 text-[22px] font-bold leading-tight text-foreground">
@@ -217,6 +241,11 @@ export default function EventDetailPage() {
             <span className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
               <Ticket className="h-3 w-3" />
               {price} ETH
+            </span>
+          ) : needsApproval ? (
+            <span className="mt-1 inline-flex shrink-0 items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-semibold text-violet-700">
+              <ShieldCheck className="h-3 w-3" />
+              Invite Only
             </span>
           ) : (
             <span className="mt-1 inline-flex shrink-0 rounded-full bg-muted/60 px-2.5 py-1 text-xs font-medium text-muted-foreground">
@@ -278,22 +307,15 @@ export default function EventDetailPage() {
         {/* Divider */}
         <div className="my-5 h-px bg-border/60" />
 
-        {/* Action Section */}
-        <ActionSection
+        {/* Inline Status */}
+        <InlineStatus
           isHost={isHost}
-          canRsvp={canRsvp}
+          isDraft={!!isDraft}
           hasActiveRsvp={hasActiveRsvp}
           needsApproval={needsApproval}
           canCheckin={canCheckin}
-          myRsvp={myRsvp}
           myApproval={myApproval}
           myCheckin={myCheckin}
-          actionLoading={actionLoading}
-          ticketPrice={price}
-          onRsvp={handleRsvp}
-          onCancelRsvp={handleCancelRsvp}
-          onShowQR={() => setShowQR(true)}
-          onShowScanner={() => setShowScanner(true)}
         />
 
         {/* Host: Attendee Management */}
@@ -308,6 +330,24 @@ export default function EventDetailPage() {
           />
         )}
       </div>
+
+      {/* Fixed Bottom Action Bar */}
+      <BottomActionBar
+        isHost={isHost}
+        isDraft={!!isDraft}
+        canRsvp={canRsvp}
+        hasActiveRsvp={hasActiveRsvp}
+        needsApproval={needsApproval}
+        canCheckin={canCheckin}
+        myCheckin={myCheckin}
+        actionLoading={actionLoading}
+        ticketPrice={price}
+        onRsvp={handleRsvp}
+        onCancelRsvp={handleCancelRsvp}
+        onPublish={handlePublish}
+        onShowQR={() => setShowQR(true)}
+        onShowScanner={() => setShowScanner(true)}
+      />
 
       {/* Attendee QR Display */}
       {address && (
@@ -335,62 +375,48 @@ export default function EventDetailPage() {
   )
 }
 
-/* ─── Action Section ─── */
+/* ─── Inline Status (shown in content area) ─── */
 
-function ActionSection({
+function InlineStatus({
   isHost,
-  canRsvp,
+  isDraft,
   hasActiveRsvp,
   needsApproval,
   canCheckin,
-  myRsvp,
   myApproval,
   myCheckin,
-  actionLoading,
-  ticketPrice,
-  onRsvp,
-  onCancelRsvp,
-  onShowQR,
-  onShowScanner,
 }: {
   isHost: boolean
-  canRsvp: boolean
+  isDraft: boolean
   hasActiveRsvp: boolean
   needsApproval: boolean
   canCheckin: boolean
-  myRsvp: RsvpEntity | null
   myApproval: { decision: string } | null
   myCheckin: unknown
-  actionLoading: string | null
-  ticketPrice: number
-  onRsvp: () => void
-  onCancelRsvp: () => void
-  onShowQR: () => void
-  onShowScanner: () => void
 }) {
-  // Host sees scan button + attendee management
-  if (isHost) {
+  if (isHost && isDraft) {
     return (
-      <div className="flex flex-col gap-3">
-        <div className="rounded-2xl border border-border bg-card px-4 py-3.5">
-          <p className="text-sm font-medium text-foreground">You&apos;re the host</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Manage attendees below
-          </p>
+      <div className="flex items-center gap-3 rounded-2xl border border-zinc-300 bg-zinc-50 px-4 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-500 text-white">
+          <Clock className="h-4 w-4" />
         </div>
-        <Button
-          onClick={onShowScanner}
-          size="lg"
-          className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
-        >
-          <ScanLine className="mr-2 h-5 w-5" />
-          Scan Check-in
-        </Button>
+        <div>
+          <p className="text-sm font-semibold text-zinc-800">Draft</p>
+          <p className="text-xs text-zinc-500">This event is not published yet</p>
+        </div>
       </div>
     )
   }
 
-  // Already checked in
+  if (isHost) {
+    return (
+      <div className="rounded-2xl border border-border bg-card px-4 py-3.5">
+        <p className="text-sm font-medium text-foreground">You&apos;re the host</p>
+        <p className="mt-0.5 text-xs text-muted-foreground">Manage attendees below</p>
+      </div>
+    )
+  }
+
   if (myCheckin) {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-4">
@@ -405,7 +431,6 @@ function ActionSection({
     )
   }
 
-  // Rejected
   if (myApproval?.decision === "rejected") {
     return (
       <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-4">
@@ -420,71 +445,112 @@ function ActionSection({
     )
   }
 
-  // Can check in (approved or no approval needed) — show QR
-  if (canCheckin) {
+  if (canCheckin && myApproval?.decision === "approved") {
     return (
-      <div className="flex flex-col gap-3">
-        {myApproval?.decision === "approved" && (
-          <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
-            <Check className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-green-800">Approved</span>
-          </div>
-        )}
-        <Button
-          onClick={onShowQR}
-          size="lg"
-          className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
-        >
-          <QrCode className="mr-2 h-5 w-5" />
-          Show Check-in QR
-        </Button>
+      <div className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-4 py-3">
+        <Check className="h-4 w-4 text-green-600" />
+        <span className="text-sm font-medium text-green-800">Approved</span>
       </div>
     )
   }
 
-  // Pending RSVP, waiting for approval
   if (hasActiveRsvp && needsApproval) {
     return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400">
-            <Clock className="h-4 w-4 text-amber-800" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-amber-800">Applied</p>
-            <p className="text-xs text-amber-600">Waiting for host approval...</p>
-          </div>
+      <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-400">
+          <Clock className="h-4 w-4 text-amber-800" />
         </div>
-        <Button
-          onClick={onCancelRsvp}
-          disabled={actionLoading === "cancel"}
-          variant="outline"
-          size="lg"
-          className="w-full rounded-2xl py-5"
-        >
-          {actionLoading === "cancel" ? (
-            <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cancelling...</>
-          ) : (
-            "Cancel Application"
-          )}
-        </Button>
+        <div>
+          <p className="text-sm font-semibold text-amber-800">Applied</p>
+          <p className="text-xs text-amber-600">Waiting for host approval...</p>
+        </div>
       </div>
     )
   }
 
-  // Pending RSVP, no approval needed — show "You're in" + QR check-in
   if (hasActiveRsvp && !needsApproval) {
     return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-4">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white">
-            <Check className="h-4 w-4" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-green-800">You&apos;re in!</p>
-            <p className="text-xs text-green-600">Your spot is confirmed.</p>
-          </div>
+      <div className="flex items-center gap-3 rounded-2xl border border-green-200 bg-green-50 px-4 py-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500 text-white">
+          <Check className="h-4 w-4" />
         </div>
+        <div>
+          <p className="text-sm font-semibold text-green-800">You&apos;re in!</p>
+          <p className="text-xs text-green-600">Your spot is confirmed.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return null
+}
+
+/* ─── Fixed Bottom Action Bar ─── */
+
+function BottomActionBar({
+  isHost,
+  isDraft,
+  canRsvp,
+  hasActiveRsvp,
+  needsApproval,
+  canCheckin,
+  myCheckin,
+  actionLoading,
+  ticketPrice,
+  onRsvp,
+  onCancelRsvp,
+  onPublish,
+  onShowQR,
+  onShowScanner,
+}: {
+  isHost: boolean
+  isDraft: boolean
+  canRsvp: boolean
+  hasActiveRsvp: boolean
+  needsApproval: boolean
+  canCheckin: boolean
+  myCheckin: unknown
+  actionLoading: string | null
+  ticketPrice: number
+  onRsvp: () => void
+  onCancelRsvp: () => void
+  onPublish: () => void
+  onShowQR: () => void
+  onShowScanner: () => void
+}) {
+  let content: React.ReactNode = null
+
+  if (isHost && isDraft) {
+    content = (
+      <Button
+        onClick={onPublish}
+        disabled={actionLoading === "publish"}
+        size="lg"
+        className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
+      >
+        {actionLoading === "publish" ? (
+          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Publishing...</>
+        ) : (
+          "Publish Event"
+        )}
+      </Button>
+    )
+  } else if (isHost) {
+    content = (
+      <Button
+        onClick={onShowScanner}
+        size="lg"
+        className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
+      >
+        <ScanLine className="mr-2 h-5 w-5" />
+        Scan Check-in
+      </Button>
+    )
+  } else if (myCheckin) {
+    return null
+  } else if (canCheckin) {
+    content = (
+      <div className="flex flex-col gap-2">
         <Button
           onClick={onShowQR}
           size="lg"
@@ -504,16 +570,51 @@ function ActionSection({
         </Button>
       </div>
     )
-  }
-
-  // Can RSVP — main action
-  if (canRsvp) {
-    return (
+  } else if (hasActiveRsvp && needsApproval) {
+    content = (
+      <Button
+        onClick={onCancelRsvp}
+        disabled={actionLoading === "cancel"}
+        variant="outline"
+        size="lg"
+        className="w-full rounded-2xl py-5"
+      >
+        {actionLoading === "cancel" ? (
+          <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Cancelling...</>
+        ) : (
+          "Cancel Application"
+        )}
+      </Button>
+    )
+  } else if (hasActiveRsvp && !needsApproval) {
+    content = (
+      <div className="flex flex-col gap-2">
+        <Button
+          onClick={onShowQR}
+          size="lg"
+          className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
+        >
+          <QrCode className="mr-2 h-5 w-5" />
+          Show Check-in QR
+        </Button>
+        <Button
+          onClick={onCancelRsvp}
+          disabled={actionLoading === "cancel"}
+          variant="ghost"
+          size="sm"
+          className="rounded-2xl text-muted-foreground"
+        >
+          Cancel RSVP
+        </Button>
+      </div>
+    )
+  } else if (canRsvp) {
+    content = (
       <Button
         onClick={onRsvp}
         disabled={actionLoading === "rsvp"}
         size="lg"
-        className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/25"
+        className="w-full rounded-2xl py-6 text-base font-semibold shadow-md shadow-primary/20"
       >
         {actionLoading === "rsvp" ? (
           <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {ticketPrice > 0 ? "Processing Payment..." : "Applying..."}</>
@@ -526,7 +627,13 @@ function ActionSection({
     )
   }
 
-  return null
+  if (!content) return null
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-20 border-t border-border/60 bg-background/80 px-6 pb-6 pt-3 backdrop-blur-lg">
+      {content}
+    </div>
+  )
 }
 
 /* ─── Attendee List (Host View) with Tabs ─── */

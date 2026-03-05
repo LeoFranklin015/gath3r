@@ -1,5 +1,5 @@
 import Image from "next/image"
-import { MapPin, Video, Clock } from "lucide-react"
+import { MapPin, Video, Clock, ShieldCheck } from "lucide-react"
 import type { EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 import type { MyEventStatus } from "@/app/hooks/useMyEvents"
 
@@ -41,11 +41,12 @@ export function EventCard({ event, status, onClick }: EventCardProps) {
     : p.location
 
   const isPending = status === "pending"
+  const isDraft = status === "draft"
 
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left transition-opacity active:opacity-70 ${isPending ? "opacity-55" : ""}`}
+      className={`w-full text-left transition-opacity active:opacity-70 ${isPending || isDraft ? "opacity-55" : ""}`}
     >
       <div className="flex gap-3 py-3">
         {/* Thumbnail — left */}
@@ -68,10 +69,12 @@ export function EventCard({ event, status, onClick }: EventCardProps) {
               className={`absolute bottom-1.5 left-1.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold leading-none ${
                 status === "going"
                   ? "bg-green-500 text-white"
-                  : "bg-amber-400 text-amber-900"
+                  : status === "draft"
+                    ? "bg-zinc-500 text-white"
+                    : "bg-amber-400 text-amber-900"
               }`}
             >
-              {status === "going" ? "Going" : "Pending"}
+              {status === "going" ? "Going" : status === "draft" ? "Draft" : "Pending"}
             </span>
           )}
         </div>
@@ -105,6 +108,14 @@ export function EventCard({ event, status, onClick }: EventCardProps) {
               </span>
             )}
           </div>
+
+          {/* Approval required indicator */}
+          {p.requiresApproval && (
+            <span className="mt-1.5 inline-flex w-fit items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+              <ShieldCheck className="h-2.5 w-2.5" />
+              Approval Required
+            </span>
+          )}
         </div>
       </div>
     </button>
