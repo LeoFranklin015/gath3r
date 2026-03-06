@@ -80,6 +80,7 @@ Each entity type has a **purpose-driven TTL** reflecting real-world product logi
 | **Approval** | Event end + 14 days | Short-lived decision record, only needed around event time |
 | **Check-in** | Event end + 14 days | Proof of attendance, relevant briefly after event |
 | **EventRecord** | 365 days | Historical archive, persists longer than the event itself |
+| **POAP NFT** | Lifetime | Lifetime archive, persists till end of blockchain |
 
 TTL values are computed dynamically using `secondsUntil()` which calculates the exact seconds remaining and rounds to an even integer (required by Arkiv's block time of 2s).
 
