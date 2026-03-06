@@ -165,26 +165,6 @@ An **Express 5** server that listens to Arkiv entity events via WebSocket subscr
 | `POST` | `/email/send` | Send email notification |
 | `GET` | `/calendar/:eventId` | Download ICS calendar file |
 
-### Contracts (`contracts/`)
-
-Two Solidity contracts deployed on **Arbitrum Sepolia** (chain ID 421614):
-
-#### `EventPOAP.sol`
-A **soulbound ERC-721** with gasless voucher minting. Each clone represents one event's POAP collection.
-
-- ERC-721 with URI storage (OpenZeppelin upgradeable)
-- **Soulbound**: Transfers are blocked after minting (only mint + burn allowed)
-- **EIP-712 voucher minting**: Host signs typed vouchers so attendees can claim without paying gas
-- **Host mint**: Direct minting by the event host (for batch operations)
-- One POAP per attendee enforced via `hasMinted` mapping
-
-#### `POAPFactory.sol`
-Deploys lightweight **ERC-1167 minimal proxy** clones of `EventPOAP` per event.
-
-- Maps Arkiv event entity keys to deployed POAP contract addresses
-- Gas-efficient deployment via OpenZeppelin Clones
-- Prevents duplicate POAP collections per event
-
 ## Event Lifecycle
 
 ```
@@ -288,3 +268,19 @@ bun run deploy:arb-sepolia
 | Chains | Kaolin (Arkiv testnet), Arbitrum Sepolia |
 | Notifications | Web Push (VAPID), Cloudflare Workers (email) |
 | QR | html5-qrcode (scanning), qrcode.react (generation) |
+
+## Contributing
+
+Contributions are welcome! To get started:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feat/your-feature`)
+3. Commit your changes (`git commit -m "feat: add your feature"`)
+4. Push to the branch (`git push origin feat/your-feature`)
+5. Open a Pull Request
+
+Please make sure your code follows the existing style and passes any linting checks before submitting.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
