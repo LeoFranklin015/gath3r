@@ -94,80 +94,6 @@ TTL values are computed dynamically using `secondsUntil()` which calculates the 
 - **Wallet abstraction via Privy**: Users sign up with email — embedded wallets are auto-created and silently bridged to Arkiv via `useArkivWallet`. No MetaMask, no seed phrases, no chain switching.
 - **IPFS for permanent storage**: Event images and avatars are uploaded to IPFS via Pinata, producing content-addressed hashes stored in entity payloads — immutable and permanently retrievable.
 
-## Architecture
-
-Monorepo with three packages:
-
-```
-.
-├── web/          # Next.js frontend (PWA)
-├── backend/      # Express.js event listener & notification service
-└── contracts/    # Solidity smart contracts (POAP NFTs)
-```
-
-### Web (`web/`)
-
-A **Next.js 16** App Router application serving as the primary user interface.
-
-- **Auth**: [Privy](https://privy.io) with email + Google login. Embedded wallets are auto-created on first login.
-- **Styling**: Tailwind CSS v4 with dark mode support, Shadcn UI components.
-- **Chain interaction**: [Arkiv SDK](https://www.npmjs.com/package/@arkiv-network/sdk) for reading/writing on-chain entities, [viem](https://viem.sh) for low-level chain calls.
-- **File storage**: Pinata (IPFS) for avatar and event image uploads.
-- **PWA**: Installable with service worker, web push notifications, and standalone display mode.
-
-#### Key Pages
-
-| Route | Description |
-|---|---|
-| `/` | Splash screen with Privy login |
-| `/onboarding` | 5-step profile setup (fund wallet, name, username/ENS, bio, socials) |
-| `/home` | Discover events + Attending tabs with city/time/price/access filters |
-| `/events/create` | Create event form (image, date/time, location, tags, options) |
-| `/events/[id]` | Event detail with RSVP, approval status, QR check-in |
-| `/events/hosted/[id]` | Host dashboard (registrations, check-ins, email, POAP tabs) |
-| `/profile` | View/edit profile, wallet balances, event history |
-
-#### Custom Hooks
-
-| Hook | Purpose |
-|---|---|
-| `useArkivWallet` | Bridges Privy embedded wallet to an Arkiv WalletClient |
-| `useEvents` | Fetches published events with optional city/time filters |
-| `useMyEvents` | Fetches user's RSVPs (going/pending/draft) with status map |
-| `useEventDetail` | Loads full event state: RSVPs, approvals, check-ins (5s polling) |
-| `useCreateEvent` | Handles event creation + publish flow |
-| `useRsvp` | RSVP and cancel operations |
-| `useProfile` | CRUD for on-chain user profiles |
-| `useHostedEvents` | Fetches events hosted by the current user |
-| `useWalletBalances` | Reads ETH balances on Kaolin + Arbitrum Sepolia |
-| `usePushNotifications` | Registers service worker for web push |
-
-### Backend (`backend/`)
-
-An **Express 5** server that listens to Arkiv entity events via WebSocket subscription and triggers side effects.
-
-- **Entity subscription**: Watches for `created`, `updated`, `deleted`, `expired`, and `ttl_extended` entity events on the Kaolin chain.
-- **Email notifications**: Sends transactional emails (RSVP confirmation, approval, check-in) via a Cloudflare Worker relay.
-- **Push notifications**: Web push notifications for approval and check-in events.
-- **Faucet**: Automatically sends 0.01 ETH (Arbitrum Sepolia) to new users when their profile entity is created.
-- **POAP management**: Deploys POAP collections and mints soulbound NFTs via the smart contracts.
-- **Calendar**: ICS calendar export endpoint for events.
-- **Logging**: In-memory structured event log with query API.
-
-#### API Routes
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Health check |
-| `GET` | `/logs` | Query entity event log (filterable by type, action) |
-| `POST` | `/poap/create` | Deploy a new EventPOAP clone for an event |
-| `POST` | `/poap/mint` | Mint a soulbound POAP to an attendee |
-| `GET` | `/poap/event/:eventId` | Get POAP contract address for an event |
-| `GET` | `/poap/check/:eventId/:attendee` | Check if attendee has minted |
-| `POST` | `/push/subscribe` | Register push notification subscription |
-| `DELETE` | `/push/subscribe` | Unregister push subscription |
-| `POST` | `/email/send` | Send email notification |
-| `GET` | `/calendar/:eventId` | Download ICS calendar file |
 
 ## Event Lifecycle
 
@@ -178,16 +104,6 @@ An **Express 5** server that listens to Arkiv entity events via WebSocket subscr
 4. Attendee checks in via QR code scan
 5. (Optional) Host mints soulbound POAP NFT to attendee
 ```
-
-## Chain Configuration
-
-| Property | Value |
-|---|---|
-| **Network** | Kaolin (Arkiv testnet) |
-| **Chain ID** | `60138453025` |
-| **RPC** | `https://kaolin.hoodi.arkiv.network/rpc` |
-| **WebSocket** | `wss://kaolin.hoodi.arkiv.network/rpc/ws` |
-| **Bridge** | `0x6db217C596Cd203256058dBbFcA37d5A62161b78` |
 
 POAP contracts are deployed on **Arbitrum Sepolia** (chain ID `421614`).
 
