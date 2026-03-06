@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Loader2, Check, Award, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ENSName } from "@/app/components/ENSName"
 import type { CheckinEntity } from "@/lib/arkiv/types"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/backend"
@@ -369,7 +370,7 @@ export function PoapTab({ checkins, eventId, eventTitle }: PoapTabProps) {
                       {isSelected && <Check className="h-3 w-3" />}
                     </div>
                   )}
-                  <span className="font-mono text-xs text-foreground">{short(wallet)}</span>
+                  <ENSName address={wallet} className="font-mono text-xs text-foreground" />
                   {isMinted && (
                     <span className="ml-auto shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
                       Minted

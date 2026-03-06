@@ -3,13 +3,10 @@
 import { useState, useEffect, useCallback } from "react"
 import { Send, Loader2, Check, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ENSName } from "@/app/components/ENSName"
 import type { RsvpEntity, CheckinEntity } from "@/lib/arkiv/types"
 
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "/api/backend"
-
-function short(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
 
 function welcomeEmailHtml(eventTitle: string): string {
   return `<!DOCTYPE html>
@@ -251,9 +248,7 @@ export function EmailTab({ checkins, rsvps, eventTitle }: EmailTabProps) {
                     <span className="block truncate text-xs text-foreground">
                       {m.email || "No email"}
                     </span>
-                    <span className="block font-mono text-[10px] text-muted-foreground">
-                      {short(m.wallet)}
-                    </span>
+                    <ENSName address={m.wallet} className="block font-mono text-[10px] text-muted-foreground" />
                   </div>
                 </button>
               )

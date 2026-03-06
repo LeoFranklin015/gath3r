@@ -4,6 +4,7 @@ import { useState, useCallback } from "react"
 import { ScanLine, UserCheck, Loader2, Check } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { QRScanner } from "@/app/components/event-detail/QRScanner"
+import { ENSName } from "@/app/components/ENSName"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createCheckin } from "@/lib/arkiv/entities/checkin"
 import type { RsvpEntity, ApprovalEntity, CheckinEntity } from "@/lib/arkiv/types"
@@ -145,9 +146,7 @@ export function CheckinTab({
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100">
                   <Check className="h-3 w-3 text-green-700" />
                 </div>
-                <span className="font-mono text-xs text-foreground">
-                  {short(c.attendeeWallet)}
-                </span>
+                <ENSName address={c.attendeeWallet} className="font-mono text-xs text-foreground" />
                 <span className="ml-auto rounded-full bg-muted/60 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                   {c.method}
                 </span>
