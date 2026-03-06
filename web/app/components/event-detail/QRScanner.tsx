@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { X, Loader2, Check, AlertCircle } from "lucide-react"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createCheckin, getCheckin } from "@/lib/arkiv/entities/checkin"
+import { ENSName } from "@/app/components/ENSName"
 import type { RsvpEntity } from "@/lib/arkiv/types"
 
 type ScanState =
@@ -22,9 +23,6 @@ interface QRScannerProps {
   onCheckinComplete: () => void
 }
 
-function short(addr: string) {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-}
 
 export function QRScanner({
   open,
@@ -273,7 +271,7 @@ export function QRScanner({
               <Check className="h-5 w-5 text-white" />
             </div>
             <p className="text-sm font-semibold text-green-400">Checked in!</p>
-            <p className="font-mono text-xs text-white/50">{short(scanState.wallet)}</p>
+            <ENSName address={scanState.wallet} className="font-mono text-xs text-white/50" />
           </div>
         )}
 

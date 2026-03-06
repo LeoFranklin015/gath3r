@@ -3,11 +3,8 @@
 import { useState } from "react"
 import { Check, X, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ENSName } from "@/app/components/ENSName"
 import type { RsvpEntity, ApprovalEntity, CheckinEntity } from "@/lib/arkiv/types"
-
-function short(addr: string) {
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
-}
 
 interface RegistrationsTabProps {
   rsvps: RsvpEntity[]
@@ -174,9 +171,7 @@ export function RegistrationsTab({
                     {isSelected && <Check className="h-2.5 w-2.5" />}
                   </button>
                 )}
-                <span className="font-mono text-xs text-foreground">
-                  {short(r.attendeeWallet)}
-                </span>
+                <ENSName address={r.attendeeWallet} className="font-mono text-xs text-foreground" />
                 {isCheckedIn ? (
                   <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
                     <Check className="h-2.5 w-2.5" />

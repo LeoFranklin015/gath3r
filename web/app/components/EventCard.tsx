@@ -1,5 +1,6 @@
 import Image from "next/image"
-import { MapPin, Video, Clock, ShieldCheck } from "lucide-react"
+import { MapPin, Video, Clock, ShieldCheck, Ticket } from "lucide-react"
+import { ENSName } from "@/app/components/ENSName"
 import type { EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 import type { MyEventStatus } from "@/app/hooks/useMyEvents"
 
@@ -14,11 +15,6 @@ const ONLINE_PATTERNS = [
 
 function isOnline(location: string) {
   return ONLINE_PATTERNS.some((p) => location.toLowerCase().includes(p))
-}
-
-function short(addr: string) {
-  if (!addr || addr.length < 10) return addr
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
 }
 
 interface EventCardProps {
@@ -88,7 +84,7 @@ export function EventCard({ event, status, onClick }: EventCardProps) {
 
           {/* Host */}
           <p className="mt-1 text-xs text-muted-foreground truncate">
-            By {short(event.owner)}
+            By <ENSName address={event.owner} />
           </p>
 
           {/* Time + Location row */}
@@ -109,13 +105,21 @@ export function EventCard({ event, status, onClick }: EventCardProps) {
             )}
           </div>
 
-          {/* Approval required indicator */}
-          {p.requiresApproval && (
-            <span className="mt-1.5 inline-flex w-fit items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
-              <ShieldCheck className="h-2.5 w-2.5" />
-              Approval Required
-            </span>
-          )}
+          {/* Tags row */}
+          <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+            {p.ticketPrice > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                <Ticket className="h-2.5 w-2.5" />
+                {p.ticketPrice} ETH
+              </span>
+            )}
+            {p.requiresApproval && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium text-violet-700">
+                <ShieldCheck className="h-2.5 w-2.5" />
+                Approval Required
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </button>

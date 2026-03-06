@@ -30,6 +30,7 @@ import { createApproval } from "@/lib/arkiv/entities/approval"
 import { publishEvent } from "@/lib/arkiv/entities/event"
 import { CheckinQRCode } from "@/app/components/event-detail/CheckinQRCode"
 import { QRScanner } from "@/app/components/event-detail/QRScanner"
+import { ENSName } from "@/app/components/ENSName"
 import type { RsvpEntity, CheckinEntity } from "@/lib/arkiv/types"
 
 const ONLINE_PATTERNS = [
@@ -46,9 +47,6 @@ function isOnline(location: string) {
   return ONLINE_PATTERNS.some((p) => lower.includes(p))
 }
 
-function short(addr: string) {
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-}
 
 function formatEventDate(start: number, end: number) {
   const s = new Date(start * 1000)
@@ -217,11 +215,11 @@ export default function EventDetailPage() {
       {/* Hero image or gradient placeholder */}
       <div className="relative z-10">
         {p.imageUrl ? (
-          <div className="relative mx-5 aspect-video overflow-hidden rounded-2xl shadow-lg shadow-black/10">
+          <div className="relative mx-5 aspect-square overflow-hidden rounded-2xl shadow-lg shadow-black/10">
             <Image src={p.imageUrl} alt={p.title} fill className="object-cover" unoptimized />
           </div>
         ) : (
-          <div className="mx-5 aspect-video rounded-2xl" />
+          <div className="mx-5 aspect-square rounded-2xl" />
         )}
       </div>
 
@@ -286,7 +284,7 @@ export default function EventDetailPage() {
         {/* Host + Attendees */}
         <div className="flex items-center gap-4 text-sm">
           <span className="text-muted-foreground">
-            Hosted by <span className="font-medium text-foreground">{short(event.owner)}</span>
+            Hosted by <ENSName address={event.owner} className="font-medium text-foreground" />
           </span>
           <span className="flex items-center gap-1 text-muted-foreground">
             <Users className="h-3.5 w-3.5" />
@@ -723,9 +721,7 @@ function AttendeeList({
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs text-foreground">
-                    {short(r.attendeeWallet)}
-                  </span>
+                  <ENSName address={r.attendeeWallet} className="font-mono text-xs text-foreground" />
                   {isCheckedIn ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700">
                       <Check className="h-2.5 w-2.5" />

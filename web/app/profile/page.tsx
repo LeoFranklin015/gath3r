@@ -13,6 +13,7 @@ import { EventCard } from "@/app/components/EventCard"
 import { useProfile } from "@/app/hooks/useProfile"
 import { useMyEvents } from "@/app/hooks/useMyEvents"
 import { useWalletBalances } from "@/app/hooks/useWalletBalances"
+import { ENSName } from "@/app/components/ENSName"
 import type { SocialPlatform, SocialLink, EventPayload, ArkivEntity } from "@/lib/arkiv/types"
 
 const BIO_MAX_LENGTH = 160
@@ -452,7 +453,7 @@ function CopyAddress({ address }: { address: string }) {
       onClick={copy}
       className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-2.5 py-1 font-mono text-[12px] text-muted-foreground transition-colors hover:bg-muted"
     >
-      {address.slice(0, 6)}...{address.slice(-4)}
+      <ENSName address={address} />
       {copied
         ? <Check className="h-3 w-3 text-green-500" />
         : <Copy className="h-3 w-3" />

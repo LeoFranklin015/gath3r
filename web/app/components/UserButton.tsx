@@ -6,6 +6,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 import { CalendarDays, Check, Copy, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BlobAvatar } from "@/app/components/BlobAvatar";
+import { ENSName } from "@/app/components/ENSName";
 import { useProfile } from "@/app/hooks/useProfile";
 
 export function UserButton() {
@@ -75,9 +76,7 @@ export function UserButton() {
               role="menuitem"
               className="w-full justify-between rounded-xl font-mono text-xs"
             >
-              <span>
-                {embeddedWallet.address.slice(0, 6)}...{embeddedWallet.address.slice(-4)}
-              </span>
+              <ENSName address={embeddedWallet.address} />
               {copied
                 ? <Check className="h-3.5 w-3.5 text-green-500" />
                 : <Copy className="h-3.5 w-3.5 text-muted-foreground" />
