@@ -8,7 +8,7 @@ export const EXPIRES_IN = {
 // Entity type discriminants — used as queryable attributes
 export const ENTITY_TYPE = {
   PROFILE: 'profile',
-  EVENT: 'event',
+  EVENT: 'gather-events',
   RSVP: 'rsvp',
   EVENT_RECORD: 'event_record',
   CHECKIN: 'checkin',

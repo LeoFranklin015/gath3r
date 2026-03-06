@@ -169,12 +169,22 @@ export async function listDraftEvents(
   }))
 }
 
+export async function deleteEvent(
+  walletClient: WalletClient,
+  entityKey: string,
+): Promise<string> {
+  const { txHash } = await walletClient.deleteEntity({ entityKey })
+  return txHash
+}
+
 export async function getEvent(
   entityKey: string,
 ): Promise<ArkivEntity<EventPayload> | null> {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const entity: any = await publicClient.getEntity(entityKey as `0x${string}`)
+    const typeAttr = entity.attributes?.find((a: any) => a.key === 'type')?.value
+    if (typeAttr && typeAttr !== ENTITY_TYPE.EVENT) return null
     const statusAttr = entity.attributes?.find((a: any) => a.key === 'status')?.value
     return {
       entityKey: entity.key,

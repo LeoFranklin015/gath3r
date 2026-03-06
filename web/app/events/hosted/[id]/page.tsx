@@ -10,12 +10,14 @@ import {
   Video,
   Users,
   Loader2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react"
 import { AppHeader } from "@/app/components/AppHeader"
 import { useEventDetail } from "@/app/hooks/useEventDetail"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { createApproval } from "@/lib/arkiv/entities/approval"
-import { publishEvent } from "@/lib/arkiv/entities/event"
+import { publishEvent, deleteEvent } from "@/lib/arkiv/entities/event"
 import { Button } from "@/components/ui/button"
 import { RegistrationsTab } from "@/app/components/host-dashboard/RegistrationsTab"
 import { CheckinTab } from "@/app/components/host-dashboard/CheckinTab"
@@ -62,6 +64,8 @@ export default function HostDashboardPage() {
   const activeRsvps = rsvps.filter((r) => r.status !== "cancelled")
   const needsApproval = !!event?.payload.requiresApproval
   const [publishing, setPublishing] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (ready && !authenticated) router.replace("/")
@@ -142,6 +146,19 @@ export default function HostDashboardPage() {
     [getClient, address, id, reload],
   )
 
+  const handleDelete = useCallback(async () => {
+    setDeleting(true)
+    try {
+      const client = await getClient()
+      await deleteEvent(client, id)
+      router.replace("/events/hosted")
+    } catch (e) {
+      console.error("Delete failed:", e)
+      setDeleting(false)
+      setShowDeleteModal(false)
+    }
+  }, [getClient, id, router])
+
   if (!ready || !authenticated || (loading && !event)) {
     return (
       <div className="flex h-dvh items-center justify-center bg-background">
@@ -202,6 +219,13 @@ export default function HostDashboardPage() {
               {p.maxCapacity > 0 && ` / ${p.maxCapacity} max`}
             </span>
           </div>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-destructive/30 px-3 py-1.5 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/15"
+          >
+            <Trash2 className="h-3 w-3" />
+            Delete event
+          </button>
         </div>
       </div>
 
@@ -285,6 +309,52 @@ export default function HostDashboardPage() {
           />
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <>
+          <div
+            className="fixed inset-0 z-50 bg-black/40"
+            onClick={() => !deleting && setShowDeleteModal(false)}
+          />
+          <div className="fixed inset-x-0 bottom-0 z-50 mx-4 mb-8 rounded-2xl border border-border bg-background p-5 shadow-xl">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <AlertTriangle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-base font-semibold text-foreground">Delete event?</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This will permanently remove this event. This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted/60 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 rounded-xl bg-destructive px-4 py-2.5 text-sm font-medium text-destructive-foreground transition-colors hover:bg-destructive/90 disabled:opacity-50"
+              >
+                {deleting ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Deleting...
+                  </span>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

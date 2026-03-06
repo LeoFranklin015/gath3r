@@ -46,7 +46,7 @@ export function parseEntity(entity: any, action: string): ParsedEntity {
   }
 
   switch (entityType) {
-    case 'event': {
+    case 'gather-events': {
       const host = attr(attributes, 'hostWallet')
       const status = attr(attributes, 'status')
       const city = attr(attributes, 'city')
