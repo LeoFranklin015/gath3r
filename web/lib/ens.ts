@@ -53,6 +53,7 @@ export async function addArkivSubname(
       chainId: CHAIN_ID,
       addresses: {
         "60": address,
+        "2147905262": address,
       },
       apiKey,
       overrideSignatureCheck: true,
