@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/backend/:path*",
-        destination: "https://gather.philotheephilix.in/:path*",
+        destination: "https://gath3r.philotheephilix.in/:path*",
       },
     ];
   },
