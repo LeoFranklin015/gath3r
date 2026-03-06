@@ -88,7 +88,11 @@ TTL values are computed dynamically using `secondsUntil()` which calculates the 
 - **Entity lifecycle transitions**: Events move through `draft → published → unlisted` states via entity updates. RSVPs transition from `pending → confirmed` based on approval decisions.
 - **Real-time entity polling**: `useEventDetail` polls every 5 seconds, loading the event + all related RSVPs, Approvals, and Check-ins in parallel to reflect live state changes.
 - **Backend entity subscriptions**: The Express server subscribes to Arkiv entity events via WebSocket (`created`, `updated`, `deleted`, `expired`, `ttl_extended`) and triggers side effects — email notifications, push notifications, and automatic faucet funding for new users.
-- **Cross-chain entity-to-NFT bridge**: When a Check-in entity is created on Kaolin, the backend can mint a soulbound POAP NFT on Arbitrum Sepolia — bridging Arkiv's data layer with EVM smart contracts.
+- **Cross-chain entity-to-NFT bridge**: When a Check-in entity is created on Kaolin, the backend can mint a soulbound POAP NFT 
+ — bridging Arkiv's data layer with EVM smart contracts. POAPs serve as a permanent attendance registry that persists beyond entity TTLs.
+- **ENS-based identity**: Profile entities store resolved ENS names as queryable attributes, replacing raw wallet addresses with human-readable identities (e.g., `alice.eth`) across the entire UI.
+- **Wallet abstraction via Privy**: Users sign up with email — embedded wallets are auto-created and silently bridged to Arkiv via `useArkivWallet`. No MetaMask, no seed phrases, no chain switching.
+- **IPFS for permanent storage**: Event images and avatars are uploaded to IPFS via Pinata, producing content-addressed hashes stored in entity payloads — immutable and permanently retrievable.
 
 ## Architecture
 
