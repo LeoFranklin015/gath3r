@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@arkiv-network/sdk": "^0.6.2",
+    "@justaname.id/sdk": "^0.2.204",
     "@privy-io/react-auth": "^3.15.0",
     "@privy-io/server-auth": "^1.32.5",
     "class-variance-authority": "^0.7.1",

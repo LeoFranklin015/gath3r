@@ -106,7 +106,7 @@ export function SplashScreen() {
           className="w-full rounded-2xl py-6 text-base font-semibold"
         >
           <Mail className="mr-2 h-4 w-4" />
-          Continue with Email
+          Get Started
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           By continuing, you agree to our{" "}

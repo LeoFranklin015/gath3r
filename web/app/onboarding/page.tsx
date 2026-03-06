@@ -9,12 +9,13 @@ import { useProfile } from "@/app/hooks/useProfile"
 import { useArkivWallet } from "@/app/hooks/useArkivWallet"
 import { StepIndicator } from "@/app/components/onboarding/StepIndicator"
 import { NameStep } from "@/app/components/onboarding/NameStep"
+import { UsernameStep } from "@/app/components/onboarding/UsernameStep"
 import { BioStep } from "@/app/components/onboarding/BioStep"
 import { SocialLinksStep } from "@/app/components/onboarding/SocialLinksStep"
 import { FundStep } from "@/app/components/onboarding/FundStep"
 import type { OnboardingData } from "@/app/components/onboarding/types"
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
 
 export default function OnboardingPage() {
   const { ready, authenticated, user, logout } = usePrivy()
@@ -139,8 +140,9 @@ export default function OnboardingPage() {
           >
             {step === 0 && <FundStep address={address ?? ""} onNext={goNext} />}
             {step === 1 && <NameStep {...stepProps} seed={address ?? user?.id ?? ""} />}
-            {step === 2 && <BioStep {...stepProps} />}
-            {step === 3 && <SocialLinksStep {...stepProps} />}
+            {step === 2 && <UsernameStep {...stepProps} address={address ?? ""} />}
+            {step === 3 && <BioStep {...stepProps} />}
+            {step === 4 && <SocialLinksStep {...stepProps} />}
           </div>
         )}
       </div>
