@@ -4,7 +4,7 @@
 
 Gath3r is a decentralized event management platform built on the [Arkiv Network](https://arkiv.network) (Kaolin testnet). Users create, discover, RSVP to, and check into events — with all data stored as on-chain entities. Attendance is optionally commemorated with soulbound POAP NFTs on Arbitrum Sepolia.
 
-Users never need to know about blockchain or Arkiv — wallets are auto-created on email signup, gas is abstracted away, and the entire experience feels like a traditional event platform.
+Users never need to know about blockchain or Arkiv — wallets are auto-created on email signup, the entire experience feels like a traditional event platform.
 
 ## Entity Relationship Diagram
 
